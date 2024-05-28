@@ -100,10 +100,7 @@ RUN apt-get update && \
     apt-get install -y \
     ros-${ROS2_DISTRO}-ros-ign-bridge \
     ros-${ROS2_DISTRO}-vision-msgs \
-    ros-${ROS2_DISTRO}-joint-state-publisher \
-    ros-${ROS2_DISTRO}-ign-ros2-control \
-    ros-${ROS2_DISTRO}-hardware-interface \
-    ros-${ROS2_DISTRO}-controller-interface \ 
+    ros-${ROS2_DISTRO}-ign-ros2-control
 
 # MoveIt 2 ws
 WORKDIR /root
@@ -136,5 +133,14 @@ RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; colcon build --e
 RUN echo "source ${COLCON_WS}/install/setup.bash" >> ~/.bashrc
 
 # Create ros2_kortex repository
+WORKDIR /root
+RUN mkdir -p kortex2_ws/src
+WORKDIR /root/kortex2_ws/src
+RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git 
+RUN git clone git@github.com:tylerjw/serial.git --single-branch ros2
+RUN git clone git@github.com:PickNikRobotics/ros2_robotiq_gripper.git 
+RUN rosdep install --ignore-src --from-paths src -y -r
+RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+RUN echo "source /root/kortex2_ws/install/setup.bash"
 
 CMD ["bash"]

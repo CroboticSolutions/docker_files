@@ -123,13 +123,13 @@ RUN echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 WORKDIR ${COLCON_WS}
 RUN sudo apt install ros-${ROS2_DISTRO}-ament-cmake-python
 RUN sudo apt-get install ros-${ROS2_DISTRO}-rviz-visual-tools 
-RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
+RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; MAKEFLAGS="-j{nproc-1}" colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
 WORKDIR ${COLCON_WS}/src
 RUN git clone https://github.com/moveit/moveit2_tutorials.git -b ${ROS2_DISTRO}
 RUN git clone https://github.com/moveit/moveit_visual_tools.git -b ros2
 RUN git clone https://github.com/PickNikRobotics/graph_msgs.git -b ros2
 WORKDIR ${COLCON_WS}
-RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
+RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; MAKEFLAGS="-j{nproc-1}" colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
 RUN echo "source ${COLCON_WS}/install/setup.bash" >> ~/.bashrc
 
 # Create ros2_kortex repository
@@ -140,7 +140,7 @@ RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git
 RUN git clone git@github.com:tylerjw/serial.git --single-branch ros2
 RUN git clone git@github.com:PickNikRobotics/ros2_robotiq_gripper.git 
 RUN rosdep install --ignore-src --from-paths src -y -r
-RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+RUN bash -c "source /opt/ros/humble/setup.bash; MAKEFLAGS="-j{nproc-1}" colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
 RUN echo "source /root/kortex2_ws/install/setup.bash"
 
 CMD ["bash"]

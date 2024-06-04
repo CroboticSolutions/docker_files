@@ -137,8 +137,8 @@ WORKDIR /root
 RUN mkdir -p kortex2_ws/src
 WORKDIR /root/kortex2_ws/src
 RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git 
-RUN git clone git@github.com:tylerjw/serial.git --single-branch ros2
-RUN git clone git@github.com:PickNikRobotics/ros2_robotiq_gripper.git 
+RUN git clone https://github.com/tylerjw/serial.git --single-branch ros2
+RUN git clone https://github.com/PickNikRobotics/ros2_robotiq_gripper.git 
 RUN rosdep install --ignore-src --from-paths src -y -r
 RUN bash -c "source /opt/ros/humble/setup.bash; MAKEFLAGS="-j{nproc-1}" colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
 RUN echo "source /root/kortex2_ws/install/setup.bash"

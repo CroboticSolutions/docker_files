@@ -34,3 +34,6 @@ And after that:
 `dev_ws`: is the workspace where we develop. 
 
 
+#### Possible issues: 
+
+- [ros2_robotiq_gripper](https://github.com/PickNikRobotics/ros2_robotiq_gripper/issues/21)

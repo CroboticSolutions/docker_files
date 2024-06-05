@@ -104,7 +104,7 @@ RUN apt-get update && \
 
 # MoveIt 2 ws
 WORKDIR /root
-ENV COLCON_WS /root/ws_moveit2/
+ENV COLCON_WS /root/ws_moveit2
 RUn mkdir -p ${COLCON_WS}/src
 WORKDIR ${COLCON_WS}/src
 
@@ -128,23 +128,11 @@ WORKDIR ${COLCON_WS}/src
 RUN git clone https://github.com/moveit/moveit2_tutorials.git -b ${ROS2_DISTRO}
 RUN git clone https://github.com/moveit/moveit_visual_tools.git -b ros2
 RUN git clone https://github.com/PickNikRobotics/graph_msgs.git -b ros2
+RUN git clone https://github.com/moveit/moveit_task_constructor.git -b ${ROS2_DISTRO}
+RUN git clone https://github.com/moveit/moveit_resources.git -b ros2
 WORKDIR ${COLCON_WS}
 RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; MAKEFLAGS="-j${nproc-1}" colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
 RUN echo "source ${COLCON_WS}/install/setup.bash" >> ~/.bashrc
-
-# Create ros2_kortex repository
-#RUN apt-get update 
-#RUN apt-get install python3-pip -y
-#RUN pip install git+https://github.com/catkin/catkin_tools.git
-# RUN apt-get install -y python3-catkin-tools
-#WORKDIR /root
-#RUN git clone https://github.com/tylerjw/serial.git 
-#WORKDIR /root/serial 
-#RUN mkdir build 
-#WORKDIR /root/serial/build
-#RUN cmake ..
-#RUN make 
-#RUN make install
 
 #RUN apt-get install -y libserial-dev
 RUN mkdir -p kortex2_ws/src
@@ -158,6 +146,6 @@ RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git
 WORKDIR /root/kortex2_ws
 #RUN rosdep install --ignore-src --from-paths src -y -r
 RUN bash -c "source /opt/ros/humble/setup.bash; colcon build"
-RUN echo "source /root/kortex2_ws/install/setup.bash"
+RUN echo "source /root/kortex2_ws/install/setup.bash" >> ~/.bashrc
 
 CMD ["bash"]

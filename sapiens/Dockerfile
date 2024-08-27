@@ -34,17 +34,14 @@ RUN conda init bash \
     && . ~/.bashrc \
     && conda create --name sapiens_lite python=3.10 \
     && conda activate sapiens_lite \
-    && conda install torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia \
-    && pip install opencv-python tqdm json-tricks mmdet mmcv 
-#RUN conda create -n sapiens_lite python=3.10 
-#SHELL ["conda", "run", "-n", "sapiens_lite", "/bin/bash", "-c"]
-#RUN conda activate sapiens_lite 
-#RUN conda install torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia 
-#RUN pip install opencv-python tqdm json-tricks 
+    && conda install pytorch=2.2.0 torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia \
+    && pip install opencv-python tqdm json-tricks \
+    && pip install mmcv==2.2.0 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.2/index.html \
+    && pip install mmpose mmdet
 
 SHELL ["/bin/bash", "-c"]
 
-# Download weights from huggingface
+# Download weights from huggingface [Should be downloaded by API automatically] 
 
 # Sapiens lite installation
 RUN cd $SAPIENS

@@ -12,3 +12,8 @@ Human-centric vision tasks are:
 This Dockerfile enables plug&play start for the sapiens foundational models for following platforms: 
 * PC with NVIDIA GPU (Ubuntu 20.04 local) 
 * NVIDIA ORIN NX [TODO] 
+
+
+### How to install `mmcv`? 
+
+Instructions how to properly build mmcv are [here](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). 

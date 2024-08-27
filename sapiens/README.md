@@ -14,6 +14,16 @@ This Dockerfile enables plug&play start for the sapiens foundational models for 
 * NVIDIA ORIN NX [TODO] 
 
 
+### Lite 
+
+Folder lite contains docker that builds environment only for the sapiens inference. 
+
+### Full 
+
+Folder full contains Dockerfile that builds environment for the training (fine-tuning) env for sapiens. 
+
 ### How to install `mmcv`? 
 
 Instructions how to properly build mmcv are [here](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). 
+
+Download weights simply entering file and finding button download for the chkpt you need. 

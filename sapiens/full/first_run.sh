@@ -2,7 +2,7 @@
 
 xhost local:root
 
-CONTAINER_NAME=sapiens_cont
+CONTAINER_NAME=sapiens_2_cont
 IMAGE_NAME=sapiens_img:latest
 
 # Hook to the current SSH_AUTH_LOCK - since it changes

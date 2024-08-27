@@ -5,7 +5,10 @@ RUN apt-get update -y && \
     build-essential \
     wget \
     git \
-    feh
+    feh \
+    ffmpeg \
+    libsm6 \
+    libxext6 
 
 WORKDIR /root
 
@@ -32,7 +35,7 @@ RUN conda init bash \
     && conda create --name sapiens_lite python=3.10 \
     && conda activate sapiens_lite \
     && conda install torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia \
-    && pip install opencv-python tqdm json-tricks 
+    && pip install opencv-python tqdm json-tricks mmdet mmcv 
 #RUN conda create -n sapiens_lite python=3.10 
 #SHELL ["conda", "run", "-n", "sapiens_lite", "/bin/bash", "-c"]
 #RUN conda activate sapiens_lite 

@@ -22,6 +22,17 @@ Folder lite contains docker that builds environment only for the sapiens inferen
 
 Folder full contains Dockerfile that builds environment for the training (fine-tuning) env for sapiens. 
 
+Build full version by running: 
+```
+cd full 
+docker build -t sapiens_img:full . 
+```
+
+Run container with: 
+```
+./first_run.sh
+```
+
 ### How to install `mmcv`? 
 
 Instructions how to properly build mmcv are [here](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). 

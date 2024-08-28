@@ -9,12 +9,14 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 ENV TZ=Europe/Zagreb
 ENV ROSCONSOLE_FORMAT '[${severity}] [${time}] [${node}]: ${message}'
 
+# Install apt packages
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
     wget \
     git \
     feh \
+    nano \
     ffmpeg \
     libsm6 \
     libxext6 

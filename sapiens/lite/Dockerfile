@@ -35,7 +35,7 @@ RUN conda init bash \
     && conda create --name sapiens_lite python=3.10 \
     && conda activate sapiens_lite \
     && conda install torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia \
-    && pip install opencv-python tqdm json-tricks 
+    && pip install opencv-python tqdm json-tricks mmdet
 
 # Sapiens lite installation
 RUN cd $SAPIENS

@@ -18,6 +18,8 @@ This Dockerfile enables plug&play start for the sapiens foundational models for 
 
 Folder lite contains docker that builds environment only for the sapiens inference. 
 
+Weights for the sapiens lite can be found [here](https://huggingface.co/facebook/sapiens/tree/main/sapiens_lite_host). 
+
 ### Full 
 
 Folder full contains Dockerfile that builds environment for the training (fine-tuning) env for sapiens. 

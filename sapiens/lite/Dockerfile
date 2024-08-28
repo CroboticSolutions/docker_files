@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel
+FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
@@ -34,12 +34,8 @@ RUN conda init bash \
     && . ~/.bashrc \
     && conda create --name sapiens_lite python=3.10 \
     && conda activate sapiens_lite \
-    && conda install torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia \
-    && pip install opencv-python tqdm json-tricks mmdet mmcv 
-
-SHELL ["/bin/bash", "-c"]
-
-# Download weights from huggingface
+    && conda install torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia \
+    && pip install opencv-python tqdm json-tricks 
 
 # Sapiens lite installation
 RUN cd $SAPIENS

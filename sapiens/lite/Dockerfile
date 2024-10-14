@@ -6,6 +6,8 @@ RUN apt-get update -y && \
     wget \
     git \
     feh \
+    nano \
+    htop \
     ffmpeg \
     libsm6 \
     libxext6 
@@ -13,7 +15,7 @@ RUN apt-get update -y && \
 WORKDIR /root
 
 # Conda
-ENV CONDA_DIR /opt/conda
+ENV CONDA_DIR=/opt/conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda
 
@@ -21,7 +23,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Sapiens
-RUN git clone https://github.com/facebookresearch/sapiens.git
+RUN git clone https://github.com/fzoric8/sapiens.git
 
 # Define ENV variables
 ENV SAPIENS_ROOT=/root/sapiens

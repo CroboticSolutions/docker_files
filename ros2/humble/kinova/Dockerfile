@@ -62,7 +62,7 @@ RUN apt install -y \
 
 # Colcon setup according to moveit tutorial 
 RUN colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
-RUN  colcon mixin update default
+RUN colcon mixin update default
 
 # Copy configuration files
 COPY ./to_copy/aliases /root/.bash_aliases

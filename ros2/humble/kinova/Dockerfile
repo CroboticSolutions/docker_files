@@ -110,6 +110,7 @@ WORKDIR ${COLCON_WS}/src
 
 # Download moveit2 source code
 RUN git clone https://github.com/ros-planning/moveit2.git -b ${ROS2_DISTRO}
+RUN git clone https://github.com/moveit/py_binding_tools.git -b ros2
 RUN for repo in moveit2/moveit2.repos $(f="moveit2/moveit2_${ROS2_DISTRO}.repos"; test -r $f && echo $f); do vcs import < "$repo"; done
 RUN rosdep install -r --from-paths . --ignore-src --rosdistro ${ROS2_DISTRO} -y
 RUN git clone https://github.com/moveit/moveit_task_constructor.git -b ${ROS2_DISTRO}

@@ -130,23 +130,21 @@ RUN git clone https://github.com/moveit/moveit2_tutorials.git -b ${ROS2_DISTRO}
 RUN git clone https://github.com/moveit/moveit_visual_tools.git -b ros2
 RUN git clone https://github.com/PickNikRobotics/graph_msgs.git -b ros2
 RUN git clone https://github.com/moveit/moveit_task_constructor.git -b ${ROS2_DISTRO}
-RUN git clone https://github.com/moveit/moveit_resources.git -b ros2
+#RUN git clone https://github.com/moveit/moveit_resources.git -b ros2
 WORKDIR ${COLCON_WS}
 RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; MAKEFLAGS="-j${nproc-1}" colcon build --event-handlers desktop_notification- status- --cmake-args -DCMAKE_BUILD_TYPE=Release"
 RUN echo "source ${COLCON_WS}/install/setup.bash" >> ~/.bashrc
 
 #RUN apt-get install -y libserial-dev
-RUN mkdir -p kortex2_ws/src
-WORKDIR /root/kortex2_ws/src
-RUN git clone https://github.com/tylerjw/serial.git 
-WORKDIR /root/kortex2_ws/src/serial 
-RUN git checkout ros2
-WORKDIR /root/kortex2_ws/src/
-RUN git clone https://github.com/PickNikRobotics/ros2_robotiq_gripper.git 
-RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git 
-WORKDIR /root/kortex2_ws
+#RUN mkdir -p kortex2_ws/src
+#WORKDIR /root/kortex2_ws/src
+#WORKDIR /root/kortex2_ws/src/
+#RUN git clone https://github.com/PickNikRobotics/ros2_robotiq_gripper.git 
+#RUN vcs import src --skip-existing --input src/ros2_robotiq_gripper-not-released.humble.repos
+#RUN git clone https://github.com/PickNikRobotics/ros2_kortex.git 
+#WORKDIR /root/kortex2_ws
 #RUN rosdep install --ignore-src --from-paths src -y -r
-RUN bash -c "source /opt/ros/humble/setup.bash; colcon build"
-RUN echo "source /root/kortex2_ws/install/setup.bash" >> ~/.bashrc
+#RUN bash -c "source /opt/ros/humble/setup.bash; colcon build"
+#RUN echo "source /root/kortex2_ws/install/setup.bash" >> ~/.bashrc
 
 CMD ["bash"]

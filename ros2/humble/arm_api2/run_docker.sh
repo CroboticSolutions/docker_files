@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=kortex2_cont
-IMAGE_NAME=kortex2_img:latest
+CONTAINER_NAME=arm_api2_cont
+IMAGE_NAME=arm_api2_img:humble
 
 # Hook to the current SSH_AUTH_LOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/

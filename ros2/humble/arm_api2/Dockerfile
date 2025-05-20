@@ -134,7 +134,9 @@ RUN bash -c "source /opt/ros/humble/setup.sh; source ~/.bashrc; MAKEFLAGS="-j${n
 RUN echo "source ${COLCON_WS}/install/setup.bash" >> ~/.bashrc
 
 # Install UR, Kinova, Robotiq gripper 
-RUN apt-get install -y libserial-dev
+RUN apt-get install -y \
+    libserial-dev \
+    ament-cmake
 RUN mkdir -p arm_ws/src
 WORKDIR /root/arm_ws/src
 RUN git clone --single-branch --branch ros2 https://github.com/tylerjw/serial
@@ -148,11 +150,15 @@ RUN git clone --single-branch --branch humble https://github.com/CroboticSolutio
 RUN git clone --single-branch --branch humble https://github.com/CroboticSolutions/Universal_Robots_ROS2_Driver.git
 RUN git clone --single-branch --branch humble https://github.com/CroboticSolutions/Universal_Robots_ROS2_GZ_Simulation.git
 
+WORKDIR /root/arm_ws
+ENV ROS_DISTRO humble
+RUN rosdep update && rosdep install --ignore-src --from-paths src -y
+
 # Build arm_ws
 WORKDIR /root/arm_ws/
 RUN bash -c "source /opt/ros/humble/setup.bash; rosdep update && rosdep install --ignore-src --from-paths src -y"
 RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --symlink-install"
 RUN echo "source /root/arm_ws/install/setup.bash" >> ~/.bashrc
-RUN echo "export GZ_SIM_RESOURCE_PATH=/root/arm_ws/install/robotiq_description/share" >> ~.bashrc
+RUN echo "export GZ_SIM_RESOURCE_PATH=/root/arm_ws/install/robotiq_description/share" >> ~/.bashrc
 
 CMD ["bash"]

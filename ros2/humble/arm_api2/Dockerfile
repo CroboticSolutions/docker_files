@@ -150,9 +150,14 @@ RUN git clone --single-branch --branch humble https://github.com/CroboticSolutio
 RUN git clone --single-branch --branch humble https://github.com/CroboticSolutions/Universal_Robots_ROS2_Driver.git
 RUN git clone --single-branch --branch humble https://github.com/CroboticSolutions/Universal_Robots_ROS2_GZ_Simulation.git
 
+# Update deps 
 WORKDIR /root/arm_ws
 ENV ROS_DISTRO humble
 RUN rosdep update && rosdep install --ignore-src --from-paths src -y
+
+# Only panda repo (to mitigate dep install which install moveit from pkgs)
+WORKDIR /root/arm_ws/src
+RUN git clone --single-branch --branch humble_devel https://github.com/AndrejOrsula/panda_gz_moveit2
 
 # Build arm_ws
 WORKDIR /root/arm_ws/
@@ -160,5 +165,7 @@ RUN bash -c "source /opt/ros/humble/setup.bash; rosdep update && rosdep install 
 RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --symlink-install"
 RUN echo "source /root/arm_ws/install/setup.bash" >> ~/.bashrc
 RUN echo "export GZ_SIM_RESOURCE_PATH=/root/arm_ws/install/robotiq_description/share" >> ~/.bashrc
+COPY ./to_copy/ros2_aliases /tmp/
+RUN cat /tmp/ros2_aliases >> ~/.bashrc 
 
 CMD ["bash"]

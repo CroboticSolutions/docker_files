@@ -21,5 +21,5 @@ docker run \
   --env DISPLAY=$DISPLAY \
   --env TERM=xterm-256color \
   --name $CONTAINER_NAME \
-  $IMAGE_NAME \
+  $DOCKERHUB_SRC/$IMAGE_NAME \
   /bin/bash

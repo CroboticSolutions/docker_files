@@ -159,6 +159,10 @@ RUN rosdep update && rosdep install --ignore-src --from-paths src -y
 WORKDIR /root/arm_ws/src
 RUN git clone --single-branch --branch humble_devel https://github.com/AndrejOrsula/panda_gz_moveit2
 
+# Clone arm_api2 
+RUN git clone https://github.com/CroboticSolutions/arm_api2.git
+RUN git clone https://github.com/CroboticSolutions/arm_api2_msgs.git 
+
 # Build arm_ws
 WORKDIR /root/arm_ws/
 RUN bash -c "source /opt/ros/humble/setup.bash; rosdep update && rosdep install --ignore-src --from-paths src -y"

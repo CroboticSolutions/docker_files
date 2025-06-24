@@ -24,6 +24,7 @@ RUN apt-get update &&  apt-get install -q -y \
     bc \
     cmake \
     curl \
+    cuda-toolkit \
     git \
     gnupg \
     lsb-release \
@@ -171,15 +172,24 @@ RUN echo "export GZ_SIM_RESOURCE_PATH=/root/arm_ws/install/robotiq_description/s
 COPY ./to_copy/ros2_aliases /tmp/
 RUN cat /tmp/ros2_aliases >> ~/.bashrc 
 
+# Cumotion
 WORKDIR /root
 RUN mkdir -p isaac_ros_ws/src
 ENV ISAAC_ROS_WS=/root/isaac_ros_ws
 WORKDIR ${ISAAC_ROS_WS}/src
-#RUN git clone -b release-3.2 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git isaac_ros_common
-#RUN git clone --recurse-submodules -b release-3.2 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_cumotion.git isaac_ros_cumotion
-#RUN apt-get update
-#RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_common --ignore-src -y
-#RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_cumotion --ignore-src -y
-#RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --packages-up-to isaac_ros_cumotion_examples" 
+RUN apt install gnupg
+RUN apt-key adv --fetch-key https://repo.download.nvidia.com/jetson/jetson-ota-public.asc
+RUN apt install -y software-properties-common 
+RUN add-apt-repository 'deb https://repo.download.nvidia.com/jetson/x86_64/jammy r36.4 main'
+RUN apt update
+RUN apt install libnvvpi3 vpi3-dev vpi3-samples
+RUN git clone -b release-3.2 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git isaac_ros_common
+ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-12.4
+RUN bash -c "source /opt/ros/humble/setup.bash; colcon build" 
+RUN git clone --recurse-submodules -b release-3.2 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_cumotion.git isaac_ros_cumotion
+RUN apt-get update
+RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_common --ignore-src -y
+RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_cumotion --ignore-src -y
+RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --packages-up-to isaac_ros_cumotion_examples" 
 
 CMD ["bash"]

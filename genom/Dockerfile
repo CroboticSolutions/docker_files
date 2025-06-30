@@ -22,23 +22,37 @@ RUN apt-get update &&  apt-get install -q -y \
     apt-utils \
     build-essential \
     bc \
+    bison \
+    bzip2 \
     cmake \
     curl \
+    flex \
     git \
     gnupg \
     lsb-release \
+    libbz2-dev \
+    libelf-dev \
+    libudev-dev \
+    libusb-1.0.0-dev \
     libboost-dev \
+    libncurses-dev \
+    libsdl2-dev \
+    libtool-bin \
+    pax \
     sudo \
     nano \
     net-tools \
     tmux \
     tmuxinator \
+    tcl-dev \
+    tk-dev \
     wget \
     ranger \
     htop \
     libgl1-mesa-glx \
     libgl1-mesa-dri \
-    libeigen-stl-containers-dev 
+    libeigen-stl-containers-dev \
+    tar 
 
 # Prepare for ROS2
 # RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
@@ -84,7 +98,7 @@ ENV HOME=/root
 
 # Bootstrap robotpkg
 WORKDIR /root/
-RUN mkdir -p /sw/src
+RUN mkdir -p /sw/srcarchiveers
 WORKDIR /root/sw/src
 RUN git clone https://git.openrobots.org/robots/robotpkg
 WORKDIR /root/sw/src/robotpkg/bootstrap
@@ -92,5 +106,11 @@ RUN ls
 RUN bash -c "./bootstrap --prefix /root/openrobots"
 RUN echo "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin" >> ~/.bashrc
 
+# Copy needed robotpkg.conf to the default conf file
+COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
 
 CMD ["bash"]
+# WORKDIR /root/sw/src/robotpkg
+# RUN bash -c "source /root/.bashrc; make update-telekyb3"
+
+#CMD ["bash"]

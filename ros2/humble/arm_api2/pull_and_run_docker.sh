@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONTAINER_NAME=arm_api2_cont
+CONTAINER_NAME=arm_api2_cont_one_click_test
 DOCKERHUB_SRC=croboticsolutions
 IMAGE_NAME=arm_api2:humble
 

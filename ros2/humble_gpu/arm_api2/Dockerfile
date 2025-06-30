@@ -172,6 +172,8 @@ RUN echo "export GZ_SIM_RESOURCE_PATH=/root/arm_ws/install/robotiq_description/s
 COPY ./to_copy/ros2_aliases /tmp/
 RUN cat /tmp/ros2_aliases >> ~/.bashrc 
 
+CMD ["bash"]
+
 # Cumotion
 WORKDIR /root
 RUN mkdir -p isaac_ros_ws/src
@@ -189,7 +191,10 @@ RUN bash -c "source /opt/ros/humble/setup.bash; colcon build"
 RUN git clone --recurse-submodules -b release-3.2 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_cumotion.git isaac_ros_cumotion
 RUN apt-get update
 RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_common --ignore-src -y
-RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_cumotion --ignore-src -y
-RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --packages-up-to isaac_ros_cumotion_examples" 
+# This is just bad. Try their included Dockerfile, otherwise, rest :)
+#RUN rosdep update && rosdep install --from-paths ${ISAAC_ROS_WS}/src/isaac_ros_cumotion --ignore-src -y
+#RUN apt-get install -y python3-pip
+#RUN pip3 install torch
+#RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --packages-up-to isaac_ros_cumotion_examples" 
 
 CMD ["bash"]

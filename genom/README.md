@@ -6,6 +6,7 @@ Initial docker to set up GenoM components for the easier development.
 - [x] build example telekyb3 with all reqs
 - [ ] Set up init quadrotor simulation with gz-sim 
 - [ ] Add aerial physical interaction package with it 
+- [ ] Wait for the ROS 2 support check
 
 ## Useful documentation: 
 - [Genom-ROS-Gazebo](https://homepages.laas.fr/felix/files/tp.pdf)

@@ -55,9 +55,9 @@ RUN apt-get update &&  apt-get install -q -y \
     tar 
 
 # Prepare for ROS2
-# RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-# RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-# RUN apt update
+#RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+#RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+#RUN apt update
 
 # Install ROS2
 # RUN apt-get update && \
@@ -109,7 +109,16 @@ COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
 
 WORKDIR /root/sw/src/robotpkg
 
+# ROS required packages --> w8 for ros 2
+#RUN apt-get install -y \
+#    python3.10 \
+#    python3-dev \
+#    python3-pyparsing \
+#    python3-setuptools \
+#    libgtest-dev \
+#    python3-empy
+
 # For some reason this command fails --> Fails in docker but not in container?!
-RUN bash -c "source ~/.bashrc; make update-telekyb3"
+#RUN bash -c "source ~/.bashrc; make update-telekyb3"
 
 CMD ["bash"]

@@ -89,10 +89,8 @@ COPY ./to_copy/ranger /root/.config/ranger/rc.conf
 RUN apt-get update
 RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-RUN apt-get update
-RUN apt-get install -y \ 
-    ignition-fortress 
-
+RUN apt-get -y update
+RUN apt-get install -y gz-harmonic
 
 ENV HOME=/root
 
@@ -109,8 +107,9 @@ RUN echo "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin" >> ~/.ba
 # Copy needed robotpkg.conf to the default conf file
 COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
 
-CMD ["bash"]
-# WORKDIR /root/sw/src/robotpkg
-# RUN bash -c "source /root/.bashrc; make update-telekyb3"
+WORKDIR /root/sw/src/robotpkg
 
-#CMD ["bash"]
+# For some reason this command fails --> Fails in docker but not in container?!
+RUN bash -c "source ~/.bashrc; make update-telekyb3"
+
+CMD ["bash"]

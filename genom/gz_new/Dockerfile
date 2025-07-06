@@ -70,15 +70,6 @@ COPY ./to_copy/nanorc /root/.nanorc
 COPY ./to_copy/tmux /root/.tmux.conf
 COPY ./to_copy/ranger /root/.config/ranger/rc.conf
 
-# Gazebo 11 installation 
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-RUN apt-get update -y
-RUN apt-get install -y \
-    gazebo \
-    libgazebo-dev
-
-
 # Bootstrap robotpkg
 WORKDIR $HOME
 RUN mkdir -p $HOME/src
@@ -115,7 +106,6 @@ RUN apt-get install -y \
 # Simulation
 RUN apt-get install -y \
     libspdlog-dev \
-#    gz-utils \
     libxaw7-dev \
     rapidjson-dev \
     sqlite3 \ 
@@ -124,7 +114,8 @@ RUN apt-get install -y \
     qtdeclarative5-dev \
     qml-module-qtgraphicaleffects \
     qml-module-qtquick-controls \
-    qtquickcontrols2.5-dev     
+    qtquickcontrols2.5-dev \
+    libfreeimage-dev 
 
 # gz-utils requires CMake 3.22.1 
 WORKDIR $HOME
@@ -136,15 +127,15 @@ RUN ./bootstrap \
     && make -j$(nproc) \
     && sudo make install 
 
-WORKDIR $HOME
-RUN apt-get remove -y libspdlog-dev
-RUN git clone https://github.com/gabime/spdlog.git
-WORKDIR $HOME/spdlog
-RUN mkdir build
-RUN git checkout v1.7.0
-WORKDIR $HOME/spdlog/build 
-RUN cmake .. -DCMAKE_CXX_FLAGS="-fpic"
-RUN make -j8 && make install 
+#WORKDIR $HOME
+#RUN apt-get remove -y libspdlog-dev
+#RUN git clone https://github.com/gabime/spdlog.git
+#WORKDIR $HOME/spdlog
+#RUN mkdir build
+#RUN git checkout v1.7.0
+#WORKDIR $HOME/spdlog/build 
+#RUN cmake .. -DCMAKE_CXX_FLAGS="-fpic"
+#RUN make -j8 && make install 
 
 ## Also spdlog certain version 
 #WORKDIR $HOME
@@ -162,6 +153,43 @@ COPY ./to_copy/env_vars /tmp/env_vars
 RUN cat /tmp/env_vars >> ~/.bashrc
 
 # For some reason this command fails --> Fails in docker but not in container?!
-#RUN bash -c "source ~/.bashrc; make update-telekyb3"
+WORKDIR /root/src/robotpkg
+# Build telekyb
+RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-telekyb3"
+
+
+# Install gz-ionic
+RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+RUN apt-get update
+RUN apt-get install -y gz-ionic
+
+# Install simulation
+RUN apt-get install -y \
+    libgdal-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+#    libprotoc-dev \
+#    protobuf-compiler \
+    libczmq-dev \
+    libjsoncpp-dev \
+    libyaml-dev \
+    libzip-dev \
+    qml-module-qtquick-controls \
+    qml-module-qtquick-dialogs 
+    
+# Build simulation 
+RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-simulation"
+
+# Build genom3 
+RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-genom3"
+
+# Copy helper scripts
+WORKDIR /root
+COPY ./scripts/tk3-quadrotor-simulation.sh .
+COPY ./scripts/quadrotor_ctl.py .
 
 CMD ["bash"]

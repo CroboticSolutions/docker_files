@@ -76,13 +76,13 @@ RUN mkdir -p $HOME/src
 WORKDIR $HOME/src
 RUN git clone git://git.openrobots.org/robots/robotpkg
 WORKDIR $HOME/src/robotpkg/bootstrap
+# prefix is pkg installation folder
 RUN bash -c "./bootstrap --prefix /root/openrobots"
 RUN echo "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin" >> ~/.bashrc
 
 # Copy needed robotpkg.conf to the default conf file
-COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
 
-WORKDIR /root/sw/src/robotpkg
+WORKDIR /root/src/robotpkg
 
 # ROS required packages --> w8 for ros 2
 RUN apt-get install -y \
@@ -104,6 +104,7 @@ RUN apt-get install -y \
     python3-paramiko
 
 # Simulation
+RUN apt-get update 
 RUN apt-get install -y \
     libspdlog-dev \
     libxaw7-dev \
@@ -115,7 +116,8 @@ RUN apt-get install -y \
     qml-module-qtgraphicaleffects \
     qml-module-qtquick-controls \
     qtquickcontrols2.5-dev \
-    libfreeimage-dev 
+    libfreeimage-dev \
+    liblz4-dev
 
 # gz-utils requires CMake 3.22.1 
 WORKDIR $HOME
@@ -152,6 +154,9 @@ RUN apt-get install -y \
 COPY ./to_copy/env_vars /tmp/env_vars 
 RUN cat /tmp/env_vars >> ~/.bashrc
 
+# Copy robotconf
+COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
+
 # For some reason this command fails --> Fails in docker but not in container?!
 WORKDIR /root/src/robotpkg
 # Build telekyb
@@ -159,9 +164,10 @@ RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; sourc
 
 
 # Install gz-ionic
+RUN echo "test"
 RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-RUN apt-get update
+RUN apt-get update 
 RUN apt-get install -y gz-ionic
 
 # Install simulation
@@ -179,7 +185,8 @@ RUN apt-get install -y \
     libyaml-dev \
     libzip-dev \
     qml-module-qtquick-controls \
-    qml-module-qtquick-dialogs 
+    qml-module-qtquick-dialogs \
+    liblz4-dev
     
 # Build simulation 
 RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-simulation"
@@ -189,7 +196,29 @@ RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; sourc
 
 # Copy helper scripts
 WORKDIR /root
+RUN mkdir  scripts 
+WORKDIR /root/scripts
 COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
+COPY ./scripts/env.sh .
+
+# Create devel and clone UT air-phynt-genom 
+WORKDIR /root 
+RUN mkdir devel
+WORKDIR /root/devel
+RUN git clone https://gitlab.com/AIR-TEAM/air-phynt-genom3.git 
+# Build air-phynt-genom3 
+
+RUN echo "export DEVEL_BASE=/root/devel" >> ~/.bashrc
+WORKDIR /root/devel/air-phynt-genom3
+RUN git checkout experimental
+RUN bash -c "./bootstrap.sh"
+RUN mkdir build
+WORKDIR /root/devel/air-phynt-genom3/build
+# POCOLIBS BUILD
+RUN bash -c "/root/scripts/env.sh ; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
+# ROS BUILD
+#RUN ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros
+RUN make install 
 
 CMD ["bash"]

@@ -2,6 +2,34 @@
 
 Initial docker to set up GenoM components for the easier development. 
 
+# Env variables for gz: 
+```
+export GZ_SIM_PLUGIN_PATH=$HOME/openrobots/lib/gazebo:${GAZEBO_PLUGIN_PATH}
+export GZ_SIM_MODEL_PATH=$HOME/openrobots/share/gazebo/models
+```
+
+# How to run init simulation: 
+
+In one terminal you can run: 
+```
+./tk3-quadrotor-simulation.sh 
+```
+
+In the other terminal you can run: 
+```
+python3 -i quadrotor_ctl.py
+```
+
+After pressing play in the gazebo simulation you can run 
+quadrotor in the python interpreter as: 
+```
+setup()
+start()
+... 
+nhfc.set_position()
+...
+```
+
 ## TODO: 
 - [x] build example telekyb3 with all reqs
 - [x] Set up init quadrotor simulation with gz-sim 

@@ -33,9 +33,12 @@ nhfc.set_position()
 ## TODO: 
 - [x] build example telekyb3 with all reqs
 - [x] Set up init quadrotor simulation with gz-sim 
-- [ ] Test ctl 
-- [ ] Add aerial physical interaction package with it 
-- [ ] Wait for the ROS 2 support check
+- [x] Test ctl 
+- [x] Add aerial physical interaction package with it 
+- [x] Wait for the ROS 2 support check
+- [ ] Buid custom package 
+- [ ] Run custom package
+- [ ] Write instructions for the README.md
 
 ## Useful documentation: 
 - [Genom-ROS-Gazebo](https://homepages.laas.fr/felix/files/tp.pdf)

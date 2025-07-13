@@ -1,4 +1,3 @@
-#!/bin/bash
 export HOME=/root
 export ROBOTPKG_BASE=$HOME/openrobots
 

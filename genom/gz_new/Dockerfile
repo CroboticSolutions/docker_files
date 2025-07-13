@@ -206,19 +206,20 @@ COPY ./scripts/env.sh .
 WORKDIR /root 
 RUN mkdir devel
 WORKDIR /root/devel
+RUN apt-get -y install asciidoctor
 RUN git clone https://gitlab.com/AIR-TEAM/air-phynt-genom3.git 
 # Build air-phynt-genom3 
-
 RUN echo "export DEVEL_BASE=/root/devel" >> ~/.bashrc
 WORKDIR /root/devel/air-phynt-genom3
 RUN git checkout experimental
 RUN bash -c "./bootstrap.sh"
 RUN mkdir build
 WORKDIR /root/devel/air-phynt-genom3/build
+# BUILD OF THE CUSTOM GENOM PACKAGE IN DOCKER FAILS (WRONG ENV VARS!)
 # POCOLIBS BUILD
-RUN bash -c "/root/scripts/env.sh ; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
+# RUN bash -c "cat /root/scripts/env.sh >> ~/.bashrc; source ~/.bashrc; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
 # ROS BUILD
-#RUN ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros
-RUN make install 
+# RUN bash -c "source ~/.bashrc; ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros"
+# RUN make install 
 
 CMD ["bash"]

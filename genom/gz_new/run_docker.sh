@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONTAINER_NAME=genom_new_cont
+CONTAINER_NAME=genom_new_cont4
 IMAGE_NAME=genom_img:gz_new
 
 # Hook to the current SSH_AUTH_LOCK - since it changes

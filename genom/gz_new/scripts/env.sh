@@ -4,6 +4,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/o
 
 # Set env variables 
 export PYTHONPATH=$PYTHONPATH:$HOME/openrobots/lib/python3.10/site-packages
+# Used if the old gazebo is used, new gazebo has GZ_SIM_RESOURCE_PATH and GZ_SIM_SYSTEM_PLUGIN_PATH
 export GAZEBO_PLUGIN_PATH=$HOME/openrobots/lib/gazebo:${GAZEBO_PLUGIN_PATH}
 export GAZEBO_MODEL_PATH=$HOME/openrobots/share/gazebo/models
 export DEVEL_BASE=/root/devel

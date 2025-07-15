@@ -30,15 +30,27 @@ nhfc.set_position()
 ...
 ```
 
+# How to build custom GenoM pkg
+
+Position in the `/root/devel/<genom_folder>`. And run set of the following commands: 
+```
+./bootstrap.sh
+mkdir build; cd build
+POCOLIBS: ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
+ROS: ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros"
+make install
+```
+
 ## TODO: 
 - [x] build example telekyb3 with all reqs
 - [x] Set up init quadrotor simulation with gz-sim 
 - [x] Test ctl 
 - [x] Add aerial physical interaction package with it 
 - [x] Wait for the ROS 2 support check
-- [ ] Buid custom package 
-- [ ] Run custom package
-- [ ] Write instructions for the README.md
+- [x] Buid custom package 
+- [x] Run custom package
+- [x] Write instructions for the README.md
+- [ ] Someone else builds Dockerfile 
 
 ## Useful documentation: 
 - [Genom-ROS-Gazebo](https://homepages.laas.fr/felix/files/tp.pdf)

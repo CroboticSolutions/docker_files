@@ -1,4 +1,5 @@
 FROM ubuntu:jammy AS base
+LABEL maintainer filip.zoric@crobotics.tech
 
 # Setup environment
 ENV LANG C.UTF-8
@@ -10,7 +11,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 ENV TZ=Europe/Zagreb
 ENV ROS_DISTRO=noetic
 ENV HOME=/root
-# Not sure this is same in ROS and ROS 2 
+# TODO: Check how to set ROSCONSOLE_FORMAT in ROS 2
 # ENV ROSCONSOLE_FORMAT '[${severity}] [${time}] [${node}]: ${message}'
 
 # Mitigate interactive prompt for choosing keyboard type
@@ -148,7 +149,8 @@ RUN apt-get install -y \
     python3-nose \
     python3-rosdistro \
     python3-yaml \
-    python3-numpy
+    python3-numpy \
+    python3-scipy 
 
 # Set up sourcing 
 COPY ./to_copy/env_vars /tmp/env_vars 
@@ -217,9 +219,14 @@ RUN mkdir build
 WORKDIR /root/devel/air-phynt-genom3/build
 # BUILD OF THE CUSTOM GENOM PACKAGE IN DOCKER FAILS (WRONG ENV VARS!)
 # POCOLIBS BUILD
-# RUN bash -c "cat /root/scripts/env.sh >> ~/.bashrc; source ~/.bashrc; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
+# RUN bash -c "./root/scripts/env.sh; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
 # ROS BUILD
 # RUN bash -c "source ~/.bashrc; ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros"
-# RUN make install 
+#RUN make install 
+
+WORKDIR /root/devel/
+RUN git clone https://gitlab.com/AIR-TEAM/minithex-cntrl-python-scripts.git
+WORKDIR /root/devel/minithex-cntrl-python-scripts/
+RUN git checkout autoassess_gz_new 
 
 CMD ["bash"]

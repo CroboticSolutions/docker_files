@@ -1,13 +1,13 @@
 FROM ubuntu:jammy AS base
-LABEL maintainer filip.zoric@crobotics.tech
+LABEL maintainer=filip.zoric@crobotics.tech
 
 # Setup environment
-ENV LANG C.UTF-8
-ENV LC_AL C.UTF-8
-ENV ROS2_DISTRO humble
-ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV ROS2_DISTRO=humble
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
 ENV TZ=Europe/Zagreb
 ENV ROS_DISTRO=noetic
 ENV HOME=/root
@@ -56,12 +56,12 @@ RUN apt-get update &&  apt-get install -q -y \
     libgl1-mesa-glx \
     libgl1-mesa-dri \
     libeigen-stl-containers-dev \
-    tar 
+    tar
 
 # TODO: Instead of ROS, install ROS 2
 #RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 #RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
-#RUN apt-get update 
+#RUN apt-get update
 #RUN apt install -y ros-$ROS_DISTRO-desktop-full
 #RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
@@ -71,19 +71,23 @@ COPY ./to_copy/nanorc /root/.nanorc
 COPY ./to_copy/tmux /root/.tmux.conf
 COPY ./to_copy/ranger /root/.config/ranger/rc.conf
 
+# To use private ssh repos in Dockerfile: https://stackoverflow.com/a/53548076
+#   - build docker with --ssh default
+#   - RUN git commands for private repos with --mount=type=ssh
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+
 # Bootstrap robotpkg
+#  - robotpkg is a compilation framework and packaging system for installing
+#    robotics software developed by the robotic community.
 WORKDIR $HOME
 RUN mkdir -p $HOME/src
 WORKDIR $HOME/src
 RUN git clone git://git.openrobots.org/robots/robotpkg
 WORKDIR $HOME/src/robotpkg/bootstrap
 # prefix is pkg installation folder
-RUN bash -c "./bootstrap --prefix /root/openrobots"
-RUN echo "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin" >> ~/.bashrc
-
-# Copy needed robotpkg.conf to the default conf file
-
-WORKDIR /root/src/robotpkg
+RUN bash -c "./bootstrap --prefix $HOME/openrobots"
+RUN echo "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin" >> ~/.bashrc
 
 # ROS required packages --> w8 for ros 2
 RUN apt-get install -y \
@@ -94,7 +98,7 @@ RUN apt-get install -y \
     libgtest-dev \
     python3-empy \
     libconsole-bridge-dev \
-    libpoco-dev \ 
+    libpoco-dev \
     libapr1-dev \
     libgpgme-dev \
     liblog4cxx-dev \
@@ -105,14 +109,13 @@ RUN apt-get install -y \
     python3-paramiko
 
 # Simulation
-RUN apt-get update 
 RUN apt-get install -y \
     libspdlog-dev \
     libxaw7-dev \
     rapidjson-dev \
-    sqlite3 \ 
+    sqlite3 \
     liburdfdom-dev \
-    libdart-all-dev \ 
+    libdart-all-dev \
     qtdeclarative5-dev \
     qml-module-qtgraphicaleffects \
     qml-module-qtquick-controls \
@@ -120,15 +123,15 @@ RUN apt-get install -y \
     libfreeimage-dev \
     liblz4-dev
 
-# gz-utils requires CMake 3.22.1 
+# gz-utils requires CMake 3.22.1
 WORKDIR $HOME
 RUN git clone https://github.com/Kitware/CMake.git
 WORKDIR $HOME/CMake
 RUN git checkout tags/v3.22.1
-RUN ./configure --qt-gui 
+RUN ./configure --qt-gui
 RUN ./bootstrap \
     && make -j$(nproc) \
-    && sudo make install 
+    && sudo make install
 
 #WORKDIR $HOME
 #RUN apt-get remove -y libspdlog-dev
@@ -136,40 +139,40 @@ RUN ./bootstrap \
 #WORKDIR $HOME/spdlog
 #RUN mkdir build
 #RUN git checkout v1.7.0
-#WORKDIR $HOME/spdlog/build 
+#WORKDIR $HOME/spdlog/build
 #RUN cmake .. -DCMAKE_CXX_FLAGS="-fpic"
-#RUN make -j8 && make install 
+#RUN make -j8 && make install
 
-## Also spdlog certain version 
+## Also spdlog certain version
 #WORKDIR $HOME
-#RUN git clone 
+#RUN git clone
 
-# genom3 
+# genom3 requirements
 RUN apt-get install -y \
     python3-nose \
     python3-rosdistro \
     python3-yaml \
     python3-numpy \
-    python3-scipy 
+    python3-scipy
 
-# Set up sourcing 
-COPY ./to_copy/env_vars /tmp/env_vars 
+# Set up sourcing
+COPY ./to_copy/env_vars /tmp/env_vars
 RUN cat /tmp/env_vars >> ~/.bashrc
 
 # Copy robotconf
-COPY ./to_copy/robotpkg.conf /root/openrobots/etc/robotpkg.conf
+#  - configuration file specifying the used packages and their options
+COPY ./to_copy/robotpkg.conf $HOME/openrobots/etc/robotpkg.conf
 
-# For some reason this command fails --> Fails in docker but not in container?!
-WORKDIR /root/src/robotpkg
-# Build telekyb
-RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-telekyb3"
-
+# Build telekyb3
+#  - a collection of software packages related to aerial robotics
+#  - flight controller, trajectory planner, drivers, etc.
+WORKDIR $HOME/src/robotpkg
+RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-telekyb3"
 
 # Install gz-ionic
-RUN echo "test"
 RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-RUN apt-get update 
+RUN apt-get update
 RUN apt-get install -y gz-ionic
 
 # Install simulation
@@ -189,44 +192,56 @@ RUN apt-get install -y \
     qml-module-qtquick-controls \
     qml-module-qtquick-dialogs \
     liblz4-dev
-    
-# Build simulation 
-RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-simulation"
 
-# Build genom3 
-RUN bash -c "export PATH=$PATH:/root/openrobots/bin:/root/openrobots/sbin; source ~/.bashrc; make update-genom3"
+# Build simulation
+RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-simulation"
 
-# Copy helper scripts
-WORKDIR /root
-RUN mkdir  scripts 
-WORKDIR /root/scripts
+# Build genom3
+#  - a software component generator that can target different middlewares (such
+#    as ROS, YARP) so that the components source code remains independant of the
+#    middleware.
+RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-genom3"
+
+# Copy helper scripts and encvironment variables
+WORKDIR $HOME
+RUN mkdir scripts
+WORKDIR $HOME/scripts
 COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
 COPY ./scripts/env.sh .
+RUN echo "alias devsource='source $HOME/scripts/env.sh'" >> ~/.bashrc
 
-# Create devel and clone UT air-phynt-genom 
-WORKDIR /root 
+# Create devel and clone UT air-phynt-genom3
+#  - air-phynt-genom3 is a genom3 component for aerial physical interaction
+WORKDIR $HOME
 RUN mkdir devel
-WORKDIR /root/devel
+WORKDIR $HOME/devel
 RUN apt-get -y install asciidoctor
-RUN git clone https://gitlab.com/AIR-TEAM/air-phynt-genom3.git 
-# Build air-phynt-genom3 
-RUN echo "export DEVEL_BASE=/root/devel" >> ~/.bashrc
-WORKDIR /root/devel/air-phynt-genom3
-RUN git checkout experimental
+RUN git clone https://gitlab.com/AIR-TEAM/air-phynt-genom3.git
+RUN cd air-phynt-genom3 && git checkout experimental
+
+# Build air-phynt-genom3
+ENV DEVEL_BASE=$HOME/devel
+WORKDIR $HOME/devel/air-phynt-genom3
 RUN bash -c "./bootstrap.sh"
+
 RUN mkdir build
-WORKDIR /root/devel/air-phynt-genom3/build
-# BUILD OF THE CUSTOM GENOM PACKAGE IN DOCKER FAILS (WRONG ENV VARS!)
-# POCOLIBS BUILD
-# RUN bash -c "./root/scripts/env.sh; ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server"
-# ROS BUILD
-# RUN bash -c "source ~/.bashrc; ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros"
-#RUN make install 
+WORKDIR $HOME/devel/air-phynt-genom3/build
 
-WORKDIR /root/devel/
-RUN git clone https://gitlab.com/AIR-TEAM/minithex-cntrl-python-scripts.git
-WORKDIR /root/devel/minithex-cntrl-python-scripts/
-RUN git checkout autoassess_gz_new 
+ARG MIDDLEWARE=pocolibs
+RUN if [ "$MIDDLEWARE" = "pocolibs" ] ; then \
+       bash -c ". $HOME/scripts/env.sh && ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server && make install"; \
+    else \
+       bash -c "source ~/.bashrc && ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros && make install"; \
+    fi
 
+# Clone minithex-cntrl-python-scripts
+#  - a repository containing Python scripts for controlling the minithex robot
+WORKDIR $HOME/devel/
+RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scripts.git
+WORKDIR $HOME/devel/minithex-cntrl-python-scripts/
+RUN git checkout autoassess_gz_new
+
+RUN mkdir -p $HOME/logs
+WORKDIR $HOME/scripts
 CMD ["bash"]

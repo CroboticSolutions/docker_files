@@ -2,15 +2,21 @@
 
 Initial docker to set up GenoM components for the easier development.
 
+<<<<<<< HEAD
 ## Setup
 Build with `docker build -t genom_img:gz_new --ssh default .`
 
-<!-- TODO REMOVE -->
-# Env variables for gz:
+Instructions how to use Docker can be found at the [LARICS wiki](https://github.com/larics/docker_files/wiki). 
+Instructions how to build docker image and container can be found at [How to use Docker?](https://github.com/larics/docker_files/wiki/3.-Usage). 
+
+# Env variables for gz: 
+
 ```
 export GZ_SIM_PLUGIN_PATH=$HOME/openrobots/lib/gazebo:${GAZEBO_PLUGIN_PATH}
 export GZ_SIM_MODEL_PATH=$HOME/openrobots/share/gazebo/models
 ```
+
+Rest of the env variables is sourced with the corresponding script in the `scripts` folder. 
 
 ## How to run init simulation:
 

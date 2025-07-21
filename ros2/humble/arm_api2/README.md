@@ -14,7 +14,7 @@ DOCKER_BUILDKIT=1 docker build -t arm_api2_img:humble --target ros2_base .
 
 Or you can pull it straight from the dockerhub as:
 ```
-docker pull crobotic_solutions/arm_api2:humble
+docker pull crobotic_solutions/arm_api2:latest
 ```
 
 If you want to add GUI to your docker image, you can build it with (the GUI is currently in a private repository):

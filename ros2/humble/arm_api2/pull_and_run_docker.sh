@@ -1,8 +1,8 @@
 #!/bin/bash
 
-CONTAINER_NAME=arm_api2_cont_one_click_test
+CONTAINER_NAME=arm_api2_cont
 DOCKERHUB_SRC=croboticsolutions
-IMAGE_NAME=arm_api2:humble
+IMAGE_NAME=arm_api2:latest
 
 # Hook to the current SSH_AUTH_LOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/

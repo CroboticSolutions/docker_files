@@ -2,7 +2,6 @@
 
 Initial docker to set up GenoM components for the easier development.
 
-<<<<<<< HEAD
 ## Setup
 Build with `docker build -t genom_img:gz_new --ssh default .`
 

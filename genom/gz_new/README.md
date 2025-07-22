@@ -60,6 +60,9 @@ make install
 - [x] Run custom package
 - [x] Write instructions for the README.md
 - [x] Someone else builds Dockerfile
+- [ ] Add tmuxinator with correct bindings
+- [ ] Add dev env with autocomplete and everything
+- [ ] Add connection of genom and ROS 
 
 ## Useful documentation:
 - [Genom-ROS-Gazebo](https://homepages.laas.fr/felix/files/tp.pdf)

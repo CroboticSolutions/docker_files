@@ -32,3 +32,7 @@ export PYTHONPATH=/opt/ros/noetic/lib/python3/dist-packages:$DEVEL_BASE/lib/pyth
 export PYTHONPATH=$PYTHONPATH:$ROBOTPKG_BASE/lib/python3.10/site-packages
 
 export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:$HOME/openrobots/share
+
+# Tmuxinator editing 
+export EDITOR="nano"
+export SHELL="bash"

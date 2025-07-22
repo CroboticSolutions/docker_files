@@ -21,7 +21,7 @@ root: ~/
 # on_project_restart: command
 
 # Run on project exit ( detaching from tmux session )
-on_project_exit: $HOME/devel/minithex-cntrl-python-scripts/sh/kill_all_pocolibs.sh
+on_project_exit: bash $HOME/devel/minithex-cntrl-python-scripts/sh/kill_all_pocolibs.sh
 
 # Run on project stop
 # on_project_stop: command
@@ -52,16 +52,19 @@ windows:
       # synchronize: after
       panes:
         - simulation:
-          - gz sim $HOME/devel/minithex-cntrl-python-scripts/gazebo/world/contact_ndst.world
-        - genom: 
-          - cd $HOME/devel/minithex-cntrl-python-scripts/sh/kill_all_pocolibs.sh
+          - gz sim -r $HOME/devel/minithex-cntrl-python-scripts/gazebo/world/contact_ndt.world
+        - genom:
+          - cd $HOME/devel/minithex-cntrl-python-scripts/sh/
+          - bash ./kill_all_pocolibs.sh
           - sleep 5
-          - bash ./launch_ndt_demo.sh 
-        - python_genomix_ctl: 
+          - bash ./launch_ndt_demo.sh
+        - python_genomix_ctl:
           - cd $HOME/devel/minithex-cntrl-python-scripts/genomix
           - sleep 5
-          - python3 -i init_genomix.py; connect_to_all_components()
-        - python_ndt_ctl: 
-          - cd %HOME/devel/minithex-cntrl-python-scripts/genomix
-          - sleep 5
-          - python3 -i behaviours.py 
+          - python3 -i init_genomix_contact.py
+          - import init_genomix_contact as gx
+          - gx.connect_to_all_components()
+        - python_ndt_ctl:
+          - cd $HOME/devel/minithex-cntrl-python-scripts/genomix
+          - sleep 10
+          - python3 ndt_test_scenario.py

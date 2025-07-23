@@ -39,6 +39,15 @@ nhfc.set_position()
 ...
 ```
 
+## How to run miniThex with tmuxinator
+
+You can run `miniThex` with tmuxinator with: 
+```
+tmuxinator start genom_ndt
+```
+Then, move along windows with `Ctrl + B` and in the lower right window, 
+press enter to start `ndt` scenario experiment. 
+
 ## How to build custom GenoM pkg
 
 Position in the `/root/devel/<genom_folder>`. And run set of the following commands:
@@ -60,7 +69,7 @@ make install
 - [x] Run custom package
 - [x] Write instructions for the README.md
 - [x] Someone else builds Dockerfile
-- [ ] Add tmuxinator with correct bindings
+- [x] Add tmuxinator with correct bindings
 - [ ] Add dev env with autocomplete and everything
 - [ ] Add connection of genom and ROS 
 

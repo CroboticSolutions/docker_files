@@ -202,14 +202,15 @@ RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; sourc
 #    middleware.
 RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-genom3"
 
-# Copy helper scripts and encvironment variables
+# Copy helper scripts and environment variables
 WORKDIR $HOME
 RUN mkdir scripts
 WORKDIR $HOME/scripts
 COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
 COPY ./scripts/env.sh .
-RUN echo "alias devsource='source $HOME/scripts/env.sh'" >> ~/.bashrc
+COPY ./scripts/genom_ndt.yml /root/.config/tmuxinator/ 
+RUN echo "source $HOME/scripts/env.sh" >> ~/.bashrc
 
 # Create devel and clone UT air-phynt-genom3
 #  - air-phynt-genom3 is a genom3 component for aerial physical interaction

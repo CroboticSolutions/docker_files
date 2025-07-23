@@ -21,7 +21,7 @@ root: ~/
 # on_project_restart: command
 
 # Run on project exit ( detaching from tmux session )
-on_project_exit: bash $HOME/devel/minithex-cntrl-python-scripts/sh/kill_all_pocolibs.sh
+# on_project_exit: bash $HOME/devel/minithex-cntrl-python-scripts/sh/kill_all_pocolibs.sh
 
 # Run on project stop
 # on_project_stop: command

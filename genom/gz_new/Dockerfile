@@ -210,7 +210,7 @@ COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
 COPY ./scripts/env.sh .
 COPY ./scripts/genom_ndt.yml /root/.config/tmuxinator/ 
-RUN cat $HOME/scripts/env.sh >> ~/.bashrc
+RUN echo "source $HOME/scripts/env.sh" >> ~/.bashrc
 
 # Create devel and clone UT air-phynt-genom3
 #  - air-phynt-genom3 is a genom3 component for aerial physical interaction

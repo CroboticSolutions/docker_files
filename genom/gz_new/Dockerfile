@@ -161,7 +161,18 @@ RUN cat /tmp/env_vars >> ~/.bashrc
 
 # Copy robotconf
 #  - configuration file specifying the used packages and their options
-COPY ./to_copy/robotpkg.conf $HOME/openrobots/etc/robotpkg.conf
+COPY ./to_copy/pocolibs_robotpkg.conf $HOME/openrobots/etc/pocolibs_robotpkg.conf
+COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/ros_robotpkg.conf 
+
+# Choose robotpkg conf based on the middleware 
+ARG MIDDLEWARE=pocolibs
+RUN if [ "$MIDDLEWARE" = "pocolibs" ] ; then \
+       mv $HOME/openrobots/etc/pocolibs_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf 
+    else \
+       mv $HOME/openrobots/etc/ros_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf 
+    fi
+# If necessary remove confs 
+RUN rm $HOME/openrobots/etc/ros_robotpkg.conf && rm $HOME/openrobots/etc/pocolibs_robotpkg.conf
 
 # Build telekyb3
 #  - a collection of software packages related to aerial robotics
@@ -191,7 +202,9 @@ RUN apt-get install -y \
     libzip-dev \
     qml-module-qtquick-controls \
     qml-module-qtquick-dialogs \
-    liblz4-dev
+    liblz4-dev \
+    doxygen \
+    graphviz
 
 # Build simulation
 RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-simulation"

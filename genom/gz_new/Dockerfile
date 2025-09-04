@@ -4,7 +4,7 @@ LABEL maintainer=filip.zoric@crobotics.tech
 # Setup environment
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
-ENV ROS2_DISTRO=humble
+#ENV ROS2_DISTRO=humble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
@@ -223,6 +223,7 @@ COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
 COPY ./scripts/env.sh .
 COPY ./scripts/genom_ndt.yml /root/.config/tmuxinator/ 
+COPY ./scripts/ros_genom_ndt.yml /root/.config/tmuxinator/
 RUN echo "source $HOME/scripts/env.sh" >> ~/.bashrc
 
 # Create devel and clone UT air-phynt-genom3

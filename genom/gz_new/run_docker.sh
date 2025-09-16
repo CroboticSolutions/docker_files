@@ -11,6 +11,7 @@ docker run \
   -it \
   --network host \
   --privileged \
+  --gpus all \
   --volume /dev:/dev \
   --volume /tmp/.x11-unix:/tmp/.x11-unix \
   --volume ~/.ssh/ssh_auth_sock:/ssh-agent \

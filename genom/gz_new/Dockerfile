@@ -177,6 +177,8 @@ RUN apt-get install -y gz-ionic
 
 # Install simulation
 RUN apt-get install -y \
+    doxygen \
+    graphviz \
     libgdal-dev \
     libavcodec-dev \
     libavdevice-dev \

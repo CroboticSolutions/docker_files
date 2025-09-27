@@ -37,9 +37,23 @@ After starting container you can execute it with:
 docker exec -it arm_api2_cont bash
 ```
 
-#### Possible issues:
+## Docker compose
+You can use docker compose to run an example of arm_api2, ros2_dash_gui and ollama LLM server.
 
-- [ros2_robotiq_gripper](https://github.com/PickNikRobotics/ros2_robotiq_gripper/issues/21)
+Start the services in the background:
+```
+docker-compose -f compose.dash_ollama.yml up -d
+```
+
+Open the GUI in your browser at `http://localhost:8050`.
+In the first run, ollama must download the model, so it can take some time. Refresh the page once in a while until it appears.
+
+To stop the services:
+```
+docker-compose -f compose.dash_ollama.yml stop
+```
+Don't use the `down` command, because it will delete all the data in ollama and you will have to download the model again.
+
 
 ## TODO:
 
@@ -47,3 +61,8 @@ docker exec -it arm_api2_cont bash
 - [ ] One click run
 - [ ] SSH keys
 - [ ] Dev setup [autocomplete + standard]
+
+
+#### Possible issues:
+
+- [ros2_robotiq_gripper](https://github.com/PickNikRobotics/ros2_robotiq_gripper/issues/21)

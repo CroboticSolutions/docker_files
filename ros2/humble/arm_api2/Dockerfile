@@ -177,24 +177,41 @@ CMD ["bash"]
 
 FROM ros2_base AS add_gui
 
-RUN apt-get update && apt-get install -y \
-    python3-venv \
-    python3-pip
+ENV HOME=/root
+WORKDIR ${HOME}
 
-# Install Python dependencies (blinker is installed by apt, but is too late version for dash)
-RUN apt remove -y python3-blinker
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install \
+# Create a Python virtual environment for the GUI.
+# GUI requires newer libraries (like numpy 2 which are not supported in ROS2 Humble)
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-venv
+
+ENV VIRTUAL_ENV=${HOME}/gui_venv
+RUN python3 -m venv ${VIRTUAL_ENV}
+
+# Install Python dependencies globally
+RUN pip install --upgrade pip
+RUN pip install \
+    websockets
+
+# Install Python dependencies in the virtual environment
+RUN . ${VIRTUAL_ENV}/bin/activate && pip install --upgrade pip
+RUN . ${VIRTUAL_ENV}/bin/activate && pip install \
+    pyyaml \
     dash \
     dash-bootstrap-components \
     dash-extensions \
     dash[diskcache] \
     opencv-python \
-    google-genai \
     websockets \
     gdown
 
-# We apparently need this to use private ssh repos in Dockerfile: https://stackoverflow.com/a/53548076
+# Install Python API for the chosen LLM backend
+ARG LLM_BACKEND="google"
+RUN if [ "$LLM_BACKEND" = "ollama" ]; then . ${VIRTUAL_ENV}/bin/activate && pip install ollama; fi
+RUN if [ "$LLM_BACKEND" = "google" ]; then . ${VIRTUAL_ENV}/bin/activate && pip install google-genai; fi
+
+# We need this to use private ssh repos in Dockerfile: https://stackoverflow.com/a/53548076
 RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 # Clone the GUI
@@ -203,9 +220,9 @@ RUN --mount=type=ssh git clone --single-branch --branch main git@github.com:Crob
 
 # Add a demo video bag
 WORKDIR /root/arm_ws/src/ros2_dash_gui
-RUN bash download_demo_bag.sh
+RUN . ${VIRTUAL_ENV}/bin/activate && bash download_demo_bag.sh
 
-# Build the GUI
+# Build the GUI as part of arm_ws
 WORKDIR /root/arm_ws/
 RUN bash -c "source /opt/ros/humble/setup.bash; colcon build --symlink-install"
 

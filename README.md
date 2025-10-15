@@ -17,7 +17,7 @@ After docker installation, follow [post-installation steps](https://docs.docker.
 ## How to use hardware acceleration (GPU) with docker? 
 
 ### NVIDIA
-Follow instructions for installing `nvidia-container-toolkit` [via /apt][https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html]. 
+Follow instructions for installing `nvidia-container-toolkit` [via /apt](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). 
 ### AMD
 Simnilar to NVIDIA, AMD also provides `container-toolkit`, install it and use it following [instructions](https://instinct.docs.amd.com/projects/container-toolkit/en/latest/container-runtime/migration-guide.html).
 

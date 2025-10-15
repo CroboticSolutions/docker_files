@@ -28,13 +28,13 @@ Simnilar to NVIDIA, AMD also provides `container-toolkit`, install it and use it
 3. Use docker container for development (use `docker start` for starting container, and `docker exec` to enter running container)
 4. After done with development use `docker stop` to stop docker container
 
-### Building docker image
+#### Building docker image
 
 ```
 docker build -t <img_name>:<tag> 
 ```
 
-### Running docker container (first time) 
+#### Running docker container (first time) 
 Each `Dockerfile` has corresponding `first_run.sh` script that can be used. 
 Each `first_run.sh` contains following command: 
 ```
@@ -88,7 +88,7 @@ You can stop running container with:
 docker stop <container_name> 
 ```
 
-## Important remarks: 
+## Important remark 
 
 If you stop container, everything you've changed will remain in your container. 
 If you delete container, all progress will be lost. Therefore, delete container only if 

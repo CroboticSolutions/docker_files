@@ -165,14 +165,15 @@ COPY ./to_copy/pocolibs_robotpkg.conf $HOME/openrobots/etc/pocolibs_robotpkg.con
 COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/ros_robotpkg.conf 
 
 # Choose robotpkg conf based on the middleware 
-ARG MIDDLEWARE=pocolibs
-RUN if [ "$MIDDLEWARE" = "pocolibs" ] ; then \
-       mv $HOME/openrobots/etc/pocolibs_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf 
+ARG MIDDLEWARE=ros
+RUN bash -c 'if [ "$MIDDLEWARE" = "pocolibs" ]; then \
+      mv "$HOME/openrobots/etc/pocolibs_robotpkg.conf" "$HOME/openrobots/etc/robotpkg.conf"; \
     else \
-       mv $HOME/openrobots/etc/ros_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf 
-    fi
-# If necessary remove confs 
-RUN rm $HOME/openrobots/etc/ros_robotpkg.conf && rm $HOME/openrobots/etc/pocolibs_robotpkg.conf
+      mv "$HOME/openrobots/etc/ros_robotpkg.conf" "$HOME/openrobots/etc/robotpkg.conf"; \
+    fi'
+
+# If necessary remove confs --> FAILS because requires if
+#  RUN rm $HOME/openrobots/etc/ros_robotpkg.conf && rm $HOME/openrobots/etc/pocolibs_robotpkg.conf
 
 # Build telekyb3
 #  - a collection of software packages related to aerial robotics
@@ -243,12 +244,17 @@ RUN bash -c "./bootstrap.sh"
 RUN mkdir build
 WORKDIR $HOME/devel/air-phynt-genom3/build
 
-ARG MIDDLEWARE=pocolibs
-RUN if [ "$MIDDLEWARE" = "pocolibs" ] ; then \
-       bash -c ". $HOME/scripts/env.sh && ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server && make install"; \
-    else \
-       bash -c "source ~/.bashrc && ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros && make install"; \
-    fi
+ARG MIDDLEWARE="ros"
+RUN bash -c 'set -e; \
+  if [ "$MIDDLEWARE" = "pocolibs" ]; then \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=pocolibs/client/c,pocolibs/server && \
+    make install; \
+  else \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=ros/client/c,ros/server,ros/client/ros && \
+    make install; \
+  fi'
 
 # Clone minithex-cntrl-python-scripts
 #  - a repository containing Python scripts for controlling the minithex robot

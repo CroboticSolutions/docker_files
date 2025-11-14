@@ -4,7 +4,7 @@ LABEL maintainer=filip.zoric@crobotics.tech
 # Setup environment
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
-ENV ROS2_DISTRO=humble
+#ENV ROS2_DISTRO=humble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
@@ -161,7 +161,19 @@ RUN cat /tmp/env_vars >> ~/.bashrc
 
 # Copy robotconf
 #  - configuration file specifying the used packages and their options
-COPY ./to_copy/robotpkg.conf $HOME/openrobots/etc/robotpkg.conf
+COPY ./to_copy/pocolibs_robotpkg.conf $HOME/openrobots/etc/pocolibs_robotpkg.conf
+COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/ros_robotpkg.conf 
+
+# Choose robotpkg conf based on the middleware 
+ARG MIDDLEWARE=ros
+RUN bash -c 'if [ "$MIDDLEWARE" = "pocolibs" ]; then \
+      mv "$HOME/openrobots/etc/pocolibs_robotpkg.conf" "$HOME/openrobots/etc/robotpkg.conf"; \
+    else \
+      mv "$HOME/openrobots/etc/ros_robotpkg.conf" "$HOME/openrobots/etc/robotpkg.conf"; \
+    fi'
+
+# If necessary remove confs --> FAILS because requires if
+#  RUN rm $HOME/openrobots/etc/ros_robotpkg.conf && rm $HOME/openrobots/etc/pocolibs_robotpkg.conf
 
 # Build telekyb3
 #  - a collection of software packages related to aerial robotics
@@ -193,7 +205,9 @@ RUN apt-get install -y \
     libzip-dev \
     qml-module-qtquick-controls \
     qml-module-qtquick-dialogs \
-    liblz4-dev
+    liblz4-dev \
+    doxygen \
+    graphviz
 
 # Build simulation
 RUN bash -c "export PATH=$PATH:$HOME/openrobots/bin:$HOME/openrobots/sbin; source ~/.bashrc; make update-simulation"
@@ -212,6 +226,7 @@ COPY ./scripts/tk3-quadrotor-simulation.sh .
 COPY ./scripts/quadrotor_ctl.py .
 COPY ./scripts/env.sh .
 COPY ./scripts/genom_ndt.yml /root/.config/tmuxinator/ 
+COPY ./scripts/ros_genom_ndt.yml /root/.config/tmuxinator/
 RUN echo "source $HOME/scripts/env.sh" >> ~/.bashrc
 
 # Create devel and clone UT air-phynt-genom3
@@ -231,12 +246,17 @@ RUN bash -c "./bootstrap.sh"
 RUN mkdir build
 WORKDIR $HOME/devel/air-phynt-genom3/build
 
-ARG MIDDLEWARE=pocolibs
-RUN if [ "$MIDDLEWARE" = "pocolibs" ] ; then \
-       bash -c ". $HOME/scripts/env.sh && ../configure --prefix=$DEVEL_BASE --with-templates=pocolibs/client/c,pocolibs/server && make install"; \
-    else \
-       bash -c "source ~/.bashrc && ../configure --prefix=$DEVEL_BASE --with-templates=ros/client/c,ros/server,ros/client/ros && make install"; \
-    fi
+ARG MIDDLEWARE="ros"
+RUN bash -c 'set -e; \
+  if [ "$MIDDLEWARE" = "pocolibs" ]; then \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=pocolibs/client/c,pocolibs/server && \
+    make install; \
+  else \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=ros/client/c,ros/server,ros/client/ros && \
+    make install; \
+  fi'
 
 # Clone minithex-cntrl-python-scripts
 #  - a repository containing Python scripts for controlling the minithex robot

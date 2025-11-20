@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=genom_gz_cont
-IMAGE_NAME=genom_img:gz_classic
+CONTAINER_NAME=genom_gz_classic_cont
+IMAGE_NAME=genom_img:gz_old
 
 # Hook to the current SSH_AUTH_LOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/
@@ -11,6 +11,7 @@ docker run \
   -it \
   --network host \
   --privileged \
+  --gpus all \
   --volume /dev:/dev \
   --volume /tmp/.x11-unix:/tmp/.x11-unix \
   --volume ~/.ssh/ssh_auth_sock:/ssh-agent \

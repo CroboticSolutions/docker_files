@@ -52,7 +52,8 @@ RUN apt-get update &&  apt-get install -q -y \
     htop \
     lsb-release \
     libeigen-stl-containers-dev \
-    tar 
+    tar \
+    mlocate 
 
 # Copy configuration files
 COPY ./to_copy/aliases /root/.bash_aliases
@@ -115,6 +116,7 @@ RUN cat /tmp/env_vars >> ~/.bashrc
 
 # Copy robotconf
 #  - configuration file specifying the used packages and their options
+RUN echo "Repeat this to refresh also mrsim-gazebo"
 COPY ./to_copy/pocolibs_robotpkg.conf $HOME/openrobots/etc/pocolibs_robotpkg.conf
 COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/ros_robotpkg.conf 
 
@@ -149,16 +151,6 @@ RUN apt-get install -y \
     qtquickcontrols2.5-dev \
     libfreeimage-dev 
 
-# gz-utils requires CMake 3.22.1 
-WORKDIR $HOME
-RUN git clone https://github.com/Kitware/CMake.git
-WORKDIR $HOME/CMake
-RUN git checkout tags/v3.22.1
-RUN ./configure --qt-gui
-RUN ./bootstrap \
-    && make -j$(nproc) \
-    && sudo make install 
-
 RUN apt-get install -y \
     libgdal-dev \
     libavcodec-dev \
@@ -175,27 +167,58 @@ RUN apt-get install -y \
     qml-module-qtquick-controls \
     qml-module-qtquick-dialogs \
     doxygen \
-    graphviz
+    graphviz \
+    asciidoctor
 
 # Build simulation and genom3
 WORKDIR $HOME/src/robotpkg
 RUN make update-simulation
 RUN make update-genom3
 
-#WORKDIR $HOME
-#RUN apt-get remove -y libspdlog-dev
-#RUN git clone https://github.com/gabime/spdlog.git
-#WORKDIR $HOME/spdlog
-#RUN mkdir build
-#RUN git checkout v1.7.0
-#WORKDIR $HOME/spdlog/build 
-#RUN cmake .. -DCMAKE_CXX_FLAGS="-fpic"
-#RUN make -j8 && make install 
+# Source env variable setup
+RUN mkdir -p $HOME/scripts
+COPY ./scripts/env.sh /root/scripts/env.sh
+RUN cat /root/scripts/env.sh >> ~/.bashrc
 
-## Also spdlog certain version 
-#WORKDIR $HOME
-#RUN git clone 
+# Build phynt for devel
+WORKDIR $HOME/devel/
+RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/air-phynt-genom3.git
 
+# Add phynt build 
+WORKDIR $HOME/devel/air-phynt-genom3
+RUN bash -c "./bootstrap.sh"
 
+RUN mkdir build
+WORKDIR $HOME/devel/air-phynt-genom3/build
+RUN bash -c 'set -e; \
+  if [ "$MIDDLEWARE" = "pocolibs" ]; then \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=pocolibs/client/c,pocolibs/server && \
+    make install; \
+  else \
+    . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=ros/client/c,ros/server,ros/client/ros && \
+    make install; \
+  fi'
+
+# Clone minithex-cntrl-python-scripts
+WORKDIR $HOME/devel 
+RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scripts.git
+
+# Install pip and matplotlib
+RUN apt-get install -y python3-pip
+RUN pip install 'matplotlib>=3.5,<3.8'
+
+# Clone minsnap trajectories
+#WORKDIR $HOME/devel/
+#RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minsnap-trajectories.git
+
+# TODO: 
+# [x] Start gazebo simulation
+# [ ] Add environment variables sourcing
+# [ ] Add tmuxinator script to run it one go 
+# [ ] Sort gazebo plugin registration  
+# [ ] Add installation of the asciidoctor and graphviz for docs building
+# [ ] Add installation of the phynt
 
 CMD ["bash"]

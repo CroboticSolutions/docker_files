@@ -35,3 +35,6 @@ export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:$HOME/openrobots/share
 # Tmuxinator editing 
 export EDITOR="nano"
 export SHELL="bash"
+
+# Source ROS
+source /root/openrobots/etc/ros/setup.bash

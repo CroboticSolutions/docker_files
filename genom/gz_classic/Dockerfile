@@ -207,11 +207,19 @@ RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scr
 
 # Install pip and matplotlib
 RUN apt-get install -y python3-pip
-RUN pip install 'matplotlib>=3.5,<3.8'
+RUN pip install 'matplotlib>=3.5,<3.8' minsnap_trajectories
 
-# Clone minsnap trajectories
-#WORKDIR $HOME/devel/
-#RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minsnap-trajectories.git
+ARG SETUP_CATKIN=true
+# Setup catkin_ws (conditional)
+COPY ./scripts/setup_catkin_ws.sh $HOME/scripts/setup_catkin_ws.sh
+RUN chmod +x $HOME/scripts/setup_catkin_ws.sh
+RUN bash -c 'if [ "$SETUP_CATKIN" = "true" ]; then \
+    source /root/openrobots/etc/ros/setup.bash && \
+    bash $HOME/scripts/setup_catkin_ws.sh && \
+    echo "source $HOME/catkin_ws/devel/setup.bash" >> ~/.bashrc; \
+  else \
+    echo "Skipping catkin_ws setup"; \
+  fi'
 
 # TODO: 
 # [x] Start gazebo simulation

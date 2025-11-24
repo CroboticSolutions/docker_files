@@ -1,0 +1,8 @@
+# Init path
+export HOME=/root
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/openrobots/bin:$HOME/openrobots/sbin
+
+# Set env variables 
+export PYTHONPATH=$PYTHONPAHT:$HOME/openrobots/lib/python3.10/site-packages
+export GAZEBO_PLUGIN_PATH=$HOME/openrobots/lib/gazebo:${GAZEBO_PLUGIN_PATH}
+export GAZEBO_MODEL_PATH=$HOME/openrobots/share/gazebo/models

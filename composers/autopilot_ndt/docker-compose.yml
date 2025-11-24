@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  genom_gz_classic:
+    image: genom_img:gz_old
+    container_name: genom_gz_classic_cont_test
+    privileged: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - SSH_AUTH_SOCK=/ssh-agent
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+      - /tmp/.x11-unix:/tmp/.x11-unix
+      - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  ros_slam_noetic:
+    image: ros_noetic:latest
+    container_name: ros_slam_noetic_cont_test
+    privileged: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - SSH_AUTH_SOCK=/ssh-agent
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+      - /tmp/.x11-unix:/tmp/.x11-unix
+      - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    command: /bin/bash

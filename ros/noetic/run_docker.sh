@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=ros_noetic_cont
-IMAGE_NAME=ros_img:noetic
+CONTAINER_NAME=ros_slam_noetic_cont
+IMAGE_NAME=ros_slam_img:noetic
 
 # Hook to the current SSH_AUTH_LOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/

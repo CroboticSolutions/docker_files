@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.3
-FROM ubuntu:20.04
+FROM ubuntu:focal
 
 # Build arguments
-ARG BUILD_SLAM=false
+ARG BUILD_SLAM=true
 
 # Setup environment
 ENV LANG C.UTF-8
@@ -42,17 +42,6 @@ RUN apt-get update &&  apt-get install -q -y \
     libncursesw5-dev \
     unzip
 
-# Add sources and keys for Gazebo installation
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
-
-RUN apt-get update
-
-# Install gazebo packages
-RUN apt-get install -q -y \
-    gazebo11 \
-    libgazebo11-dev
-
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 
@@ -60,8 +49,7 @@ RUN apt-get update
 
 # Install ROS
 RUN apt-get install -y \
-    ros-${ROS_DISTRO}-desktop-full \
-    ros-${ROS_DISTRO}-gazebo-ros-pkgs 
+    ros-${ROS_DISTRO}-desktop-full 
 
 # Install catkin tools
 RUN wget http://packages.ros.org/ros.key -O - | apt-key add -
@@ -84,62 +72,64 @@ WORKDIR /root/catkin_ws/src
 RUN bash -c "source /opt/ros/noetic/setup.bash; catkin_init_workspace"
 
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-RUN echo "source /root/catkin_ws/devel/setup.bash" >> ~/.bashrc 
+RUN echo "source /home/developer/catkin_ws/devel/setup.bash" >> ~/.bashrc 
 
 # Install SLAM dependencies (conditional)
-ARG BUILD_SLAM
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    apt-get install -y libpcl-dev libeigen3-dev; \
+    sudo apt-get install -y libpcl-dev libeigen3-dev; \
   fi'
 
 # Build OpenCV 4.x (conditional for SLAM)
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    cd /root && \
-    wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip && \
-    unzip opencv.zip && \
-    cd opencv-4.x && \
+    cd /home/developer && \
+    git clone https://github.com/opencv/opencv.git && \
+    cd opencv && \ 
+    git checkout 4.3.0 && \
     mkdir -p build && cd build && \
     cmake .. && \
     cmake --build . -j$(nproc) && \
-    make install && \
-    cd /root && rm -rf opencv.zip opencv-4.x; \
+    sudo make install && \
+    cd /home/developer && rm -rf opencv.zip; \
   fi'
 
 # Build Sophus library (conditional for SLAM)
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    mkdir -p /root/SLAM && cd /root/SLAM && \
+    mkdir -p /home/developer/SLAM && cd /home/developer/SLAM && \
     git clone https://github.com/strasdat/Sophus.git && \
     cd Sophus && \
     git checkout a621ff && \
     sed -i -E \
       -e "s/unit_complex_\.real\(\) = ([0-9.]+);/unit_complex_.real(\1);/" \
       -e "s/unit_complex_\.imag\(\) = ([0-9.]+);/unit_complex_.imag(\1);/" \
-      /root/SLAM/Sophus/sophus/so2.cpp && \
+      /home/developer/SLAM/Sophus/sophus/so2.cpp && \
     mkdir build && cd build && \
     cmake .. && \
-    make install -j$(nproc); \
+    sudo make install -j$(nproc); \
   fi'
 
 # Clone SLAM packages into catkin workspace (conditional)
-WORKDIR /root/catkin_ws/src
+WORKDIR /home/developer/catkin_ws/src
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
+    git clone https://github.com/Livox-SDK/livox_ros_driver.git && \
     git clone https://github.com/xuankuzcr/rpg_vikit.git && \
     git clone https://github.com/hku-mars/FAST-LIVO2; \
   fi'
 
 # Build workspace
-WORKDIR /root/catkin_ws
+WORKDIR /home/developer/catkin_ws
 RUN bash -c "source /opt/ros/noetic/setup.bash; catkin build"
 
 # ===================== ssh cloning ===================
 ENV DOCKER_BUILDKIT=1
-RUN apt-get install -y openssh-client
+RUN sudo apt-get install -y openssh-client
 ENV GIT_SSH_COMMAND="ssh -v" 
+USER root
 RUN --mount=type=ssh,id=default \
     mkdir -p ~/.ssh/ && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts && \
     ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
 
-WORKDIR /root
+USER developer
+WORKDIR /home/developer
 
 CMD ["bash"]

@@ -101,6 +101,13 @@ cd diagnostics
 git checkout noetic-devel
 cd ..
 
+# Clone gazebo_ros_pkgs
+echo "Cloning gazebo_ros_pkgs..."
+git clone https://github.com/ros-simulation/gazebo_ros_pkgs.git
+cd gazebo_ros_pkgs
+git checkout noetic-devel
+cd ..
+
 # Install orocos-kdl
 echo "Installing liborocos-kdl-dev..."
 apt-get install -y liborocos-kdl-dev
@@ -136,6 +143,11 @@ cd $HOME
 echo "Building catkin_ws..."
 cd $HOME/catkin_ws
 catkin_make -DCATKIN_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+
+# Copy Gazebo ROS plugins to openrobots lib path
+echo "Copying Gazebo ROS plugins to $HOME/openrobots/lib/..."
+cp $HOME/catkin_ws/devel/lib/libgazebo_ros_paths_plugin.so $HOME/openrobots/lib/
+cp $HOME/catkin_ws/devel/lib/libgazebo_ros_api_plugin.so $HOME/openrobots/lib/
 
 echo "Catkin workspace setup complete!"
 echo "Source the workspace with: source $HOME/catkin_ws/devel/setup.bash"

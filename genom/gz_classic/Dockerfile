@@ -204,6 +204,9 @@ RUN bash -c 'set -e; \
 # Clone minithex-cntrl-python-scripts
 WORKDIR $HOME/devel 
 RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scripts.git
+RUN $HOME/devel/minithex-cntrl-python-scripts/
+RUN git checkout autoassess_gz_classic 
+WORKDIR $HOME/devel
 
 # Install pip and matplotlib
 RUN apt-get install -y python3-pip
@@ -223,10 +226,12 @@ RUN bash -c 'if [ "$SETUP_CATKIN" = "true" ]; then \
 
 # TODO: 
 # [x] Start gazebo simulation
-# [ ] Add environment variables sourcing
+# [x] Add environment variables sourcing
+# [x] Sort gazebo plugin registration  
+# [x] Add installation of the asciidoctor and graphviz for docs building
+# [x] Add installation of the phynt
+# [ ] Add ROS packages for the UI simulation
+# [ ] Build SLAM
 # [ ] Add tmuxinator script to run it one go 
-# [ ] Sort gazebo plugin registration  
-# [ ] Add installation of the asciidoctor and graphviz for docs building
-# [ ] Add installation of the phynt
 
 CMD ["bash"]

@@ -26,7 +26,7 @@ services:
     command: /bin/bash
 
   ros_slam_noetic:
-    image: ros_noetic:latest
+    image: ros_slam_img:noetic
     container_name: ros_slam_noetic_cont_test
     privileged: true
     network_mode: host

@@ -72,43 +72,43 @@ WORKDIR /root/catkin_ws/src
 RUN bash -c "source /opt/ros/noetic/setup.bash; catkin_init_workspace"
 
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-RUN echo "source /home/developer/catkin_ws/devel/setup.bash" >> ~/.bashrc 
+RUN echo "source /root/catkin_ws/devel/setup.bash" >> ~/.bashrc 
 
 # Install SLAM dependencies (conditional)
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    sudo apt-get install -y libpcl-dev libeigen3-dev; \
+    apt-get install -y libpcl-dev libeigen3-dev; \
   fi'
 
 # Build OpenCV 4.x (conditional for SLAM)
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    cd /home/developer && \
+    cd /root && \
     git clone https://github.com/opencv/opencv.git && \
     cd opencv && \ 
     git checkout 4.3.0 && \
     mkdir -p build && cd build && \
     cmake .. && \
     cmake --build . -j$(nproc) && \
-    sudo make install && \
-    cd /home/developer && rm -rf opencv.zip; \
+    make install && \
+    cd /root && rm -rf opencv; \
   fi'
 
 # Build Sophus library (conditional for SLAM)
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
-    mkdir -p /home/developer/SLAM && cd /home/developer/SLAM && \
+    mkdir -p /root/SLAM && cd /root/SLAM && \
     git clone https://github.com/strasdat/Sophus.git && \
     cd Sophus && \
     git checkout a621ff && \
     sed -i -E \
       -e "s/unit_complex_\.real\(\) = ([0-9.]+);/unit_complex_.real(\1);/" \
       -e "s/unit_complex_\.imag\(\) = ([0-9.]+);/unit_complex_.imag(\1);/" \
-      /home/developer/SLAM/Sophus/sophus/so2.cpp && \
+      /root/SLAM/Sophus/sophus/so2.cpp && \
     mkdir build && cd build && \
     cmake .. && \
-    sudo make install -j$(nproc); \
+    make install -j$(nproc); \
   fi'
 
 # Clone SLAM packages into catkin workspace (conditional)
-WORKDIR /home/developer/catkin_ws/src
+WORKDIR /root/catkin_ws/src
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
     git clone https://github.com/Livox-SDK/livox_ros_driver.git && \
     git clone https://github.com/xuankuzcr/rpg_vikit.git && \
@@ -116,20 +116,18 @@ RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
   fi'
 
 # Build workspace
-WORKDIR /home/developer/catkin_ws
+WORKDIR /root/catkin_ws
 RUN bash -c "source /opt/ros/noetic/setup.bash; catkin build"
 
 # ===================== ssh cloning ===================
 ENV DOCKER_BUILDKIT=1
-RUN sudo apt-get install -y openssh-client
+RUN apt-get install -y openssh-client
 ENV GIT_SSH_COMMAND="ssh -v" 
-USER root
 RUN --mount=type=ssh,id=default \
     mkdir -p ~/.ssh/ && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts && \
     ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
 
-USER developer
-WORKDIR /home/developer
+WORKDIR /root
 
 CMD ["bash"]

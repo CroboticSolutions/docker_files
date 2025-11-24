@@ -27,6 +27,8 @@ This directory contains Docker Compose configurations for running multiple conta
 docker-compose up -d
 ```
 
+**Note:** You may see a harmless `KeyError: 'id'` warning when starting services. This is a known docker-compose version issue and doesn't affect the containers.
+
 ### Start specific service
 ```bash
 docker-compose up -d genom_gz_classic
@@ -37,6 +39,13 @@ docker-compose up -d ros_slam_noetic
 ```bash
 docker exec -it genom_gz_classic_cont bash
 docker exec -it ros_slam_noetic_cont bash
+```
+
+### Alternative: Start without logs (avoids error message)
+```bash
+docker-compose up -d --no-log-prefix
+# or
+docker-compose start
 ```
 
 ### Stop all services

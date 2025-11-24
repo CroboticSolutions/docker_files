@@ -110,10 +110,6 @@ RUN apt-get install -y \
     gazebo \
     libgazebo-dev 
 
-# Set up sourcing
-COPY ./to_copy/env_vars /tmp/env_vars
-RUN cat /tmp/env_vars >> ~/.bashrc
-
 # Copy robotconf
 #  - configuration file specifying the used packages and their options
 RUN echo "Repeat this to refresh also mrsim-gazebo"
@@ -204,7 +200,7 @@ RUN bash -c 'set -e; \
 # Clone minithex-cntrl-python-scripts
 WORKDIR $HOME/devel 
 RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scripts.git
-RUN $HOME/devel/minithex-cntrl-python-scripts/
+WORKDIR $HOME/devel/minithex-cntrl-python-scripts/
 RUN git checkout autoassess_gz_classic 
 WORKDIR $HOME/devel
 
@@ -218,11 +214,22 @@ COPY ./scripts/setup_catkin_ws.sh $HOME/scripts/setup_catkin_ws.sh
 RUN chmod +x $HOME/scripts/setup_catkin_ws.sh
 RUN bash -c 'if [ "$SETUP_CATKIN" = "true" ]; then \
     source /root/openrobots/etc/ros/setup.bash && \
-    bash $HOME/scripts/setup_catkin_ws.sh && \
-    echo "source $HOME/catkin_ws/devel/setup.bash" >> ~/.bashrc; \
+    bash $HOME/scripts/setup_catkin_ws.sh \
   else \
     echo "Skipping catkin_ws setup"; \
   fi'
+
+COPY ./scripts/setup_genom_ros_bridge.sh $HOME/scripts/setup_genom_ros_bridge.sh
+ARG SETUP_ROS_GENOM_BRIDGE=true
+RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
+    source /root/openrobots/etc/ros/setup.bash && \
+    source $HOME/catkin_ws/devel/setup.bash && \
+    bash $HOME/scripts/setup_genom_ros_bridge.sh; \
+  else \
+    echo "Skipping genom_ros_bridge setup"; \
+  fi'
+
+CMD ["bash"]
 
 # TODO: 
 # [x] Start gazebo simulation
@@ -230,8 +237,7 @@ RUN bash -c 'if [ "$SETUP_CATKIN" = "true" ]; then \
 # [x] Sort gazebo plugin registration  
 # [x] Add installation of the asciidoctor and graphviz for docs building
 # [x] Add installation of the phynt
-# [ ] Add ROS packages for the UI simulation
-# [ ] Build SLAM
+# [x] Add ROS packages for the UI simulation
+# [x] Build SLAM [Decoupled GenoM/ROS/Gazebo and ROS/SLAM container]
 # [ ] Add tmuxinator script to run it one go 
 
-CMD ["bash"]

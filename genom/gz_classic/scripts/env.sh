@@ -37,8 +37,7 @@ export SHELL="bash"
 # Source ROS
 source /root/openrobots/etc/ros/setup.bash
 source $HOME/catkin_ws/devel/setup.bash
-export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$DEVEL_BASE/share:$ROBOTPKG_BASE/share:/root/catkin_ws/src/
+export ROS_PACKAGE_PATH=$DEVEL_BASE/share:$ROBOTPKG_BASE/share:/root/catkin_ws/src/
 export GAZEBO_PLUGIN_PATH=$ROBOTPKG_BASE/lib/gazebo:${GAZEBO_PLUGIN_PATH}
 export GAZEBO_PLUGIN_PATH=$DEVEL_BASE/lib/gazebo:${GAZEBO_PLUGIN_PATH}
 export GAZEBO_PLUGIN_PATH=$HOME/catkin_ws/devel/lib:${GAZEBO_PLUGIN_PATH}
-

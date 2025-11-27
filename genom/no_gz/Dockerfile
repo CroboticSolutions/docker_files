@@ -130,6 +130,7 @@ RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/air-phynt-genom3.git
 # Add phynt build 
 WORKDIR $HOME/devel/air-phynt-genom3
 RUN bash -c "./bootstrap.sh"
+RUN apt-get install -y asciidoctor
 
 RUN mkdir build
 WORKDIR $HOME/devel/air-phynt-genom3/build
@@ -161,7 +162,3 @@ RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
   fi'
 
 CMD ["bash"]
-
-# TODO: 
-# [ ] Add tmuxinator script to run it one go 
-

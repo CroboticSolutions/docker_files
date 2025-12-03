@@ -80,9 +80,13 @@ RUN if [ "$INSTALL_GAZEBO" = "yes" ]; then \
         apt-get install -y gz-ionic; \
     fi
 
- # Install ROS2-Gazebo bridge if Gazebo is installed
+# Install ROS2-Gazebo bridge if Gazebo is installed
 RUN if [ "$INSTALL_GAZEBO" = "yes" ]; then \
-        apt-get install -y ros-${ROS2_DISTRO}-ros-gzionic; \
+        apt-get install -y \
+            ros-${ROS2_DISTRO}-ros-gz-sim \
+            ros-${ROS2_DISTRO}-ros-gz-bridge || \
+        apt-get install -y ros-${ROS2_DISTRO}-ros-gz || \
+        echo "Warning: ROS-Gazebo bridge packages not available"; \
     fi
 
 # Modify .bashrc

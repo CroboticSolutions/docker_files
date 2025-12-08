@@ -47,7 +47,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt-get update
 
 # Install ROS2
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     ros-${ROS2_DISTRO}-desktop-full \
     ros-${ROS2_DISTRO}-test-msgs \
     ros-${ROS2_DISTRO}-generate-parameter-library
@@ -114,6 +114,8 @@ RUN if [ "$LEROBOT_PY" = "yes" ]; then \
         bash -c "source $HOME/miniforge3/etc/profile.d/conda.sh && conda activate lerobot && pip install -e git+https://github.com/huggingface/lerobot.git#egg=lerobot"; \
     fi
 
+RUN apt-get install -y python3-pip
+
 # Add LeRobot conda initialization if LEROBOT_PY is enabled
 RUN if [ "$LEROBOT_PY" = "yes" ]; then \
         echo "" >> ~/.bashrc && \
@@ -128,7 +130,8 @@ RUN if [ "$LEROBOT_ROS" = "yes" ]; then \
         git clone https://github.com/JafarAbdi/ros2_so_arm100.git $HOME/so_arm_ws/src/ros2_so_arm100 && \
         git clone https://github.com/JafarAbdi/feetech_ros2_driver.git $HOME/so_arm_ws/src/feetech_ros2_driver && \
         git -C $HOME/so_arm_ws/src/ros2_so_arm100 submodule update --init --recursive && \
-        pip install catkin_pkg && \
+        rosdep init && \
+        apt-get install -y python3-catkin-pkg && \ 
         bash -c "source /opt/ros/${ROS2_DISTRO}/setup.bash && cd $HOME/so_arm_ws && rosdep update && rosdep install --from-paths src --ignore-src -r -y && colcon build --symlink-install"; \
     fi
 

@@ -1,0 +1,28 @@
+# ~/.tmuxinator/minithex_demo.yml
+# To use: tmuxinator start minithex_demo
+# Or copy to ~/.tmuxinator/ and run: tmuxinator start minithex_demo
+
+name: minithex_demo
+root: ~/
+
+windows:
+  - minithex:
+      layout: tiled
+      panes:
+        # Pane 1: Launch ROS lab contact NDT
+        - roslaunch:
+            - roslaunch genom_ros_ctl slam_contact_ndt.launch 
+        # Pane 2: Launch NDT demo script
+        - ndt_demo:
+            - cd ~/devel/minithex-cntrl-python-scripts/sh
+            - sleep 5  # Wait for NDT to initialize
+            - ./launch_ndt_demo_ros.sh
+        # Pane 3: Genomix Python connection
+        - genomix:
+            - sleep 10  # Wait for ROS master to initialize
+            - cd ~/devel/minithex-cntrl-python-scripts/genomix
+            - python3 -c "import init_genomix_contact as gx; gx.connect_to_all_components()"
+        # Pane 4: Launch minithex ROS control
+        - minithex_ctl:
+            - sleep 15  # Wait for other components to initialize
+            - roslaunch genom_ros_ctl minithex_ros_ctl.launch

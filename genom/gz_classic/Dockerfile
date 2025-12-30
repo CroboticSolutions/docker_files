@@ -208,7 +208,7 @@ WORKDIR $HOME/devel
 RUN apt-get install -y python3-pip
 RUN pip install 'matplotlib>=3.5,<3.8' minsnap_trajectories
 
-ARG SETUP_CATKIN=true
+ARG SETUP_CATKIN="true"
 # Setup catkin_ws (conditional)
 COPY ./scripts/setup_catkin_ws.sh $HOME/scripts/setup_catkin_ws.sh
 RUN chmod +x $HOME/scripts/setup_catkin_ws.sh
@@ -220,7 +220,7 @@ RUN bash -c 'if [ "$SETUP_CATKIN" = "true" ]; then \
   fi'
 
 COPY ./scripts/setup_genom_ros_bridge.sh $HOME/scripts/setup_genom_ros_bridge.sh
-ARG SETUP_ROS_GENOM_BRIDGE=true
+ARG SETUP_ROS_GENOM_BRIDGE="true"
 RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
     source /root/openrobots/etc/ros/setup.bash && \
     source $HOME/catkin_ws/devel/setup.bash && \
@@ -228,6 +228,8 @@ RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
   else \
     echo "Skipping genom_ros_bridge setup"; \
   fi'
+
+COPY ./scripts/minithex_demo.yml /root/.tmuxinator/minithex_demo.yml
 
 CMD ["bash"]
 
@@ -239,5 +241,5 @@ CMD ["bash"]
 # [x] Add installation of the phynt
 # [x] Add ROS packages for the UI simulation
 # [x] Build SLAM [Decoupled GenoM/ROS/Gazebo and ROS/SLAM container]
-# [ ] Add tmuxinator script to run it one go 
+# [x] Add tmuxinator script to run it one go 
 

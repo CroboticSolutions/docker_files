@@ -8,11 +8,11 @@ This directory contains Docker Compose configurations for running multiple conta
    ```bash
    # Build genom gz_classic image
    cd ../genom/gz_classic
-   docker build --ssh default -t genom_img:gz_old . --ssh default
+   docker build --ssh default -t genom_img:gz_old .
    
    # Build ROS Noetic SLAM image
    cd ../../ros/noetic
-   docker build --ssh default --build-arg BUILD_SLAM=true -t ros_noetic:latest .
+   docker build --ssh default --build-arg BUILD_SLAM=true -t ros_slam_noetic:latest .
    ```
 
 2. Set up SSH agent socket:
@@ -69,3 +69,6 @@ Both services have:
 - SSH agent forwarding
 - Host networking
 - Access to all devices
+
+## Note: 
+Added volume for the `ssh` keys, not the best way maybe but it works.

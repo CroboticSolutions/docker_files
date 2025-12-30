@@ -201,7 +201,7 @@ RUN bash -c 'set -e; \
 WORKDIR $HOME/devel 
 RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/minithex-cntrl-python-scripts.git
 WORKDIR $HOME/devel/minithex-cntrl-python-scripts/
-RUN git checkout autoassess_gz_classic 
+RUN git checkout autoassess_gz_classic
 WORKDIR $HOME/devel
 
 # Install pip and matplotlib

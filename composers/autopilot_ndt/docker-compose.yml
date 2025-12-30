@@ -3,7 +3,7 @@ version: '3.8'
 services:
   genom_gz_classic:
     image: genom_img:gz_old
-    container_name: genom_gz_classic_cont_test
+    container_name: genom_gz_classic_cont_NEW
     privileged: true
     network_mode: host
     environment:
@@ -14,6 +14,7 @@ services:
       - /dev:/dev
       - /tmp/.x11-unix:/tmp/.x11-unix
       - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
+      - ~/.ssh:/root/.ssh
     deploy:
       resources:
         reservations:
@@ -38,6 +39,7 @@ services:
       - /dev:/dev
       - /tmp/.x11-unix:/tmp/.x11-unix
       - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
+      - ~/.ssh:/root/.ssh
     deploy:
       resources:
         reservations:

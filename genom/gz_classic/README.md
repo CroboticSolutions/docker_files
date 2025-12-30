@@ -2,6 +2,17 @@
 
 Initial docker to set up GenoM components for the easier development. 
 
+Run build command as: 
+```
+docker build --build-arg SETUP_ROS_GENOM_BRIDGE=true --ssh default -t genom_img:gz_old .
+```
+After that you can enter container following `autopilot_ndt` instructions from composers. 
+
+When you enter container, start the whole sim using: 
+```
+tmuxinator start minithex_demo
+```
+
 ## TODO: 
 - [x] build example telekyb3 with all reqs
 - [x] Set up init quadrotor simulation with gz-sim 

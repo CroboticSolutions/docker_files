@@ -81,6 +81,14 @@ RUN apt-get install -y \
     ros-${ROS2_DISTRO}-ackermann-msgs \
     ros-${ROS2_DISTRO}-backward-ros
 
+# Conditional Universal Robots packages installation
+RUN if [ "$USE_UR_ROBOT" = "yes" ]; then \
+        apt-get install -y \
+            ros-${ROS2_DISTRO}-ros2-control \
+            ros-${ROS2_DISTRO}-ros2-controllers \
+            socat; \
+    fi
+
 # Build argument for Gazebo installation (default: no)
 ARG INSTALL_GAZEBO="no"
 
@@ -114,6 +122,9 @@ RUN echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 ARG LEROBOT_PY="no"
 ARG LEROBOT_ROS="no"
 
+# Build argument for UR Robot installation (default: no)
+ARG USE_UR_ROBOT="no"
+
 RUN apt-get install -y python3-pip
 
 # Conditional LeRobot Python setup with Miniforge
@@ -142,6 +153,13 @@ RUN if [ "$LEROBOT_ROS" = "yes" ]; then \
 WORKDIR /root/arms_ws/src
 RUN git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2.git
 RUN git clone https://github.com/CroboticSolutions/arm_api2_msgs.git
+
+# Conditional UR Robot repositories clone
+RUN if [ "$USE_UR_ROBOT" = "yes" ]; then \
+        git clone -b jazzy https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git && \
+        git clone -b ros2 https://github.com/UniversalRobots/Universal_Robots_ROS2_GZ_Simulation.git && \
+        git clone -b jazzy https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git; \
+    fi
 
 ENV ROS_DISTRO=jazzy
 # rosdep update

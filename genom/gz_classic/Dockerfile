@@ -1,4 +1,7 @@
-FROM ubuntu:jammy
+# ============================================================
+# Base Stage: Core ROS/Genom/Gazebo setup
+# ============================================================
+FROM ubuntu:jammy AS base
 
 # Setup environment
 ENV LANG=C.UTF-8
@@ -206,7 +209,7 @@ WORKDIR $HOME/devel
 
 # Install pip and matplotlib
 RUN apt-get install -y python3-pip
-RUN pip install 'matplotlib>=3.5,<3.8' minsnap_trajectories
+RUN pip install 'matplotlib>=3.5,<3.8' minsnap_trajectories websockets
 
 ARG SETUP_CATKIN="true"
 # Setup catkin_ws (conditional)
@@ -230,6 +233,49 @@ RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
   fi'
 
 COPY ./scripts/minithex_demo.yml /root/.tmuxinator/minithex_demo.yml
+
+# ============================================================
+# REACT_UI Stage: Extends base with GUI support
+# ============================================================
+FROM base AS REACT_UI
+
+# Setup GUI - Install nvm and Node.js 18, then clone and setup minithex_react_gui
+RUN --mount=type=ssh bash -c ' \
+    apt-get update && apt-get install -y curl wget && \
+    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
+    export NVM_DIR="$HOME/.nvm" && \
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+    nvm install 18 && \
+    nvm use 18 && \
+    nvm alias default 18'
+
+# Clone minithex_react_gui
+RUN --mount=type=ssh bash -c ' \
+    mkdir -p $HOME/devel && \
+    cd $HOME/devel && \
+    git clone git@github.com:CroboticSolutions/minithex_react_gui.git'
+
+# Install npm dependencies for minithex_react_gui
+RUN --mount=type=ssh bash -c ' \
+    export NVM_DIR="$HOME/.nvm" && \
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+    cd $HOME/devel/minithex_react_gui && \
+    npm install && \
+    npm install three@0.152.0 @react-three/fiber@8 @react-three/drei@8'
+
+# Clone webrtc_test
+RUN --mount=type=ssh bash -c ' \
+    mkdir -p $HOME/webrtc_test && \
+    cd $HOME/webrtc_test && \
+    git clone git@github.com:CroboticSolutions/webrtc_test.git .'
+
+# Install webrtc_test requirements and open3d
+RUN --mount=type=ssh bash -c ' \
+    pip install open3d websockets && \
+    cd $HOME/webrtc_test && \
+    if [ -f requirements.txt ]; then \
+      pip install -r requirements.txt; \
+    fi'
 
 CMD ["bash"]
 

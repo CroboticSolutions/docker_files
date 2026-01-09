@@ -111,13 +111,8 @@ RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
 WORKDIR /root/catkin_ws/src
 RUN bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
     git clone https://github.com/Livox-SDK/livox_ros_driver.git && \
-    git clone https://github.com/xuankuzcr/rpg_vikit.git && \
-    git clone https://github.com/hku-mars/FAST-LIVO2; \
+    git clone https://github.com/xuankuzcr/rpg_vikit.git; \
   fi'
-
-# Build workspace
-WORKDIR /root/catkin_ws
-RUN bash -c "source /opt/ros/noetic/setup.bash; catkin build"
 
 # ===================== ssh cloning ===================
 ENV DOCKER_BUILDKIT=1
@@ -127,6 +122,17 @@ RUN --mount=type=ssh,id=default \
     mkdir -p ~/.ssh/ && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts && \
     ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+# Custom FAST-LIVO2 
+RUN --mount=type=ssh \
+    bash -c 'if [ "$BUILD_SLAM" = "true" ]; then \
+    git clone git@github.com:CroboticSolutions/FAST-LIVO2.git; \
+  fi'
+
+# Build workspace
+WORKDIR /root/catkin_ws
+RUN bash -c "source /opt/ros/noetic/setup.bash; catkin build"
+
 
 WORKDIR /root
 

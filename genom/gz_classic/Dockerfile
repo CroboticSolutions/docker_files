@@ -237,7 +237,7 @@ COPY ./scripts/minithex_demo.yml /root/.tmuxinator/minithex_demo.yml
 # ============================================================
 # REACT_UI Stage: Extends base with GUI support
 # ============================================================
-FROM base AS REACT_UI
+FROM base AS react_ui
 
 # Setup GUI - Install nvm and Node.js 18, then clone and setup minithex_react_gui
 RUN --mount=type=ssh bash -c ' \
@@ -288,4 +288,4 @@ CMD ["bash"]
 # [x] Add ROS packages for the UI simulation
 # [x] Build SLAM [Decoupled GenoM/ROS/Gazebo and ROS/SLAM container]
 # [x] Add tmuxinator script to run it one go 
-
+# [x] Add GUI installation as different stage

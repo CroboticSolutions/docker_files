@@ -16,7 +16,7 @@ docker build --target REACT_UI --ssh default -t genom_img:gz_classic_react .
 This Dockerfile uses Docker multistage builds with two stages:
 
 - **`base`**: Core ROS/GenoM/Gazebo Classic setup with all development tools
-- **`REACT_UI`**: Extends base stage with:
+- **`react_ui`**: Extends base stage with:
   - Node.js 18 (via nvm)
   - minithex_react_gui (cloned from GitHub)
   - webrtc_test (cloned from GitHub)

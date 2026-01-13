@@ -1,0 +1,56 @@
+name: autopilot_ndt
+root: <%= ENV['AUTOPILOTNDT_COMPOSE_PATH'] || '/home/zozan/Work/docker_files/composers/autopilot_ndt' %>
+
+on_project_start:
+  - docker-compose -f <%= ENV['AUTOPILOTNDT_COMPOSE_PATH'] || '/home/zozan/Work/docker_files/composers/autopilot_ndt' %>/docker-compose.yml up -d
+
+on_project_exit:
+  - docker-compose -f <%= ENV['AUTOPILOTNDT_COMPOSE_PATH'] || '/home/zozan/Work/docker_files/composers/autopilot_ndt' %>/docker-compose.yml down
+
+windows:
+  - genom_gz:
+      layout: tiled
+      panes:
+        - bridge:
+          - docker exec -it genom_gz_classic_react_cont bash
+          - source /opt/ros/noetic/setup.bash
+          - roslaunch ros_gui_bridge bridge.launch
+        - react_gui:
+          - sleep 5
+          - docker exec -it genom_gz_classic_react_cont bash
+          - cd minithex_react_gui
+          - npm run dev
+
+  - minithex:
+      layout: tiled
+      panes:
+        - roslaunch:
+          - sleep 10
+          - docker exec -it genom_gz_classic_react_cont bash
+          - source /opt/ros/noetic/setup.bash
+          - roslaunch genom_ros_ctl slam_contact_ndt.launch
+        - ndt_demo:
+          - sleep 15
+          - docker exec -it genom_gz_classic_react_cont bash
+          - cd ~/devel/minithex-cntrl-python-scripts/sh
+          - ./launch_ndt_demo_ros.sh
+        - genomix:
+          - sleep 20
+          - docker exec -it genom_gz_classic_react_cont bash
+          - cd ~/devel/minithex-cntrl-python-scripts/genomix
+          - python3 -c "import init_genomix_contact as gx; gx.connect_to_all_components()"
+        - minithex_ctl:
+          - sleep 25
+          - docker exec -it genom_gz_classic_react_cont bash
+          - source /opt/ros/noetic/setup.bash
+          - roslaunch genom_ros_ctl minithex_ros_ctl.launch
+
+  - ros_slam:
+      layout: main-vertical
+      panes:
+        - slam:
+          - sleep 30
+          - docker exec -it ros_slam_noetic_cont bash
+          - source /opt/ros/noetic/setup.bash
+          - source /root/.bashrc
+          - roslaunch fast_livo mapping_sim.launch

@@ -27,6 +27,16 @@ Attach to a running container:
 docker exec -it arm_api2_cont bash
 ```
 
+Tmuxinator to start the workspace:
+```bash
+tmuxinator start robot_workspace
+```
+
+Stop all tmuxinator proceses:
+```bash
+tmux kill-server 
+```
+
 ## Docker Compose (arm_api2 + Ollama)
 
 Run arm_api2 container together with an Ollama LLM server. The compose file builds the image with `LLM_BACKEND=ollama` and starts tmuxinator inside the arm_api container.

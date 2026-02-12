@@ -6,23 +6,9 @@ Build and run the arm_api2 workspace with Piper, MoveIt2, arm_api2_gui, ros2_das
 
 Specify the build target you want.
 
-**ROS 2 base only (no GUI):**
+** Build with GUI:**
 ```bash
-DOCKER_BUILDKIT=1 docker build -t arm_api2_img:jazzy --target ros2_base --ssh default .
-```
-
-**With GUI (Dash + optional Ollama/Google LLM):**
-```bash
-# Ollama as LLM backend
-DOCKER_BUILDKIT=1 docker build -t arm_api2_img:jazzy --target add_gui --build-arg LLM_BACKEND=ollama --ssh default .
-
-# Google GenAI as LLM backend (default)
-DOCKER_BUILDKIT=1 docker build -t arm_api2_img:jazzy --target add_gui --ssh default .
-```
-
-**Force full rebuild (e.g. after updating repos):**
-```bash
-DOCKER_BUILDKIT=1 docker build --no-cache -t arm_api2_img:jazzy --target add_gui --ssh default .
+DOCKER_BUILDKIT=1 docker build --no-cache -t arm_api2_img:jazzy_izzy_twist_new_new --target add_gui --ssh default .
 ```
 
 ## Run (interactive shell)
@@ -52,30 +38,22 @@ ln -sf $SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
 
 **Start services in the background:**
 ```bash
-docker compose -f compose.dash_ollama.yml up -d
+docker-compose -f compose.dash_ollama.yml up -d
 ```
 
 Ollama listens on `http://localhost:11434`. The arm_api container runs with tmuxinator (robot_workspace). Open the Dash GUI in your browser at `http://localhost:8050` (or the URL your bridge/launch uses). On first run, Ollama may need to pull the model; refresh until the GUI is ready.
 
 **Stop services:**
 ```bash
-docker compose -f compose.dash_ollama.yml stop
+docker-compose -f compose.dash_ollama.yml stop
 ```
 Do not use `down` if you want to keep Ollama data (models); `down` removes volumes and you would need to re-download models.
 
-## Pull from Docker Hub
-
-If the image is published:
-```bash
-./pull_and_run_docker.sh
-```
-Edit `pull_and_run_docker.sh` to set `DOCKERHUB_SRC` and `IMAGE_NAME` to your registry and tag.
 
 ## File layout
 
 - `Dockerfile` – multi-stage build (ros2_base, add_gui)
 - `compose.dash_ollama.yml` – Compose stack: Ollama + arm_api2 (add_gui, Ollama LLM)
 - `run_docker.sh` – run image interactively with host network, X11, SSH agent, GPU
-- `pull_and_run_docker.sh` – pull image from registry and run
 - `robot_workspace.yml` – tmuxinator config (copied into image)
 - `to_copy/` – optional files to copy into the image or at runtime

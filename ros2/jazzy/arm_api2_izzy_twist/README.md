@@ -6,7 +6,7 @@ Build and run the arm_api2 workspace with Piper, MoveIt2, arm_api2_gui, ros2_das
 
 Specify the build target you want.
 
-** Build with GUI:**
+**Build with GUI:**
 ```bash
 DOCKER_BUILDKIT=1 docker build --no-cache -t arm_api2_img:jazzy_izzy_twist_new_new --target add_gui --ssh default .
 ```

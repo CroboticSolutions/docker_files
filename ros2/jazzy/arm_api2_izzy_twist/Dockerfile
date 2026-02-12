@@ -45,7 +45,7 @@ RUN apt-get update &&  apt-get install -q -y \
     python3-pip \
     python3-tk \
     librange-v3-dev \
-    libserial-dev
+    libserial-dev 
 
 # Set up Python virtual environment
 RUN python3 -m venv ${PY_VENV} --system-site-packages
@@ -70,7 +70,8 @@ RUN apt-get install -y \
     python3-colcon-mixin \
     python3-vcstool \
     ros-jazzy-navigation2 \
-    ros-jazzy-nav2-bringup
+    ros-jazzy-nav2-bringup 
+
 
 # Colcon setup according to moveit tutorial
 RUN colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
@@ -140,7 +141,7 @@ RUN if [ "$LEROBOT_ROS" = "yes" ]; then \
 
 # Clone arm_api2
 WORKDIR /root/arms_ws/src
-RUN git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2.git
+RUN git clone -b mstigleitner/devel https://github.com/CroboticSolutions/arm_api2.git
 RUN git clone https://github.com/CroboticSolutions/arm_api2_msgs.git
 
 ENV ROS_DISTRO=jazzy
@@ -161,10 +162,109 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-moveit-servo \
     ros-jazzy-moveit-visual-tools
 
-RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && \
-    python3 -m colcon build --symlink-install" 
+# Use system Python (with python3-numpy headers) so rosidl_generator_py finds numpy/ndarrayobject.h
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && PATH=/usr/bin:\$PATH python3 -m colcon build --symlink-install" 
 
 RUN echo "source ${PY_VENV}/bin/activate" >> $HOME/.bashrc
+
+
+
+# Add ROS2 environment variables to .bashrc
+RUN echo "source /root/arms_ws/install/setup.bash" >> ~/.bashrc
+RUN echo "export NVM_DIR=\"$HOME/.nvm\"" >> ~/.bashrc
+RUN echo "[ -s \"$NVM_DIR/nvm.sh\" ] && \. \"$NVM_DIR/nvm.sh\"  # This loads nvm" >> ~/.bashrc
+RUN echo "[ -s \"$NVM_DIR/bash_completion\" ] && \. \"$NVM_DIR/bash_completion\"  # This loads nvm bash_completion" >> ~/.bashrc
+RUN echo "export ROS_DOMAIN_ID=30" >> ~/.bashrc
+RUN echo "export DISPLAY=:1" >> ~/.bashrc
+RUN echo "xhost local:root" >> ~/.bashrc
+
+# Allow git@github.com clones. Build with: docker build --ssh default -f Dockerfile .
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+# Clone piper_ros (branch matches robot_workspace tmux)
+WORKDIR /root/arms_ws/src
+RUN --mount=type=ssh git clone -b mstigla/devel git@github.com:CroboticSolutions/piper_ros.git
+
+# Install MoveIt tools
+RUN apt-get install -y \
+    ros-jazzy-moveit \
+    ros-jazzy-moveit-planners-ompl \
+    ros-jazzy-pilz-industrial-motion-planner \
+    ros-jazzy-moveit-simple-controller-manager \
+    ros-jazzy-gz-ros2-control \
+    ros-jazzy-ros2-control \
+    ros-jazzy-hardware-interface
+
+# Clone gazebo_models (used by piper_gazebo)
+WORKDIR /root
+RUN --mount=type=ssh git clone git@github.com:CroboticSolutions/gazebo_models.git
+
+# Clone segment-anything
+WORKDIR /root/arms_ws/src
+RUN --mount=type=ssh git clone git@github.com:facebookresearch/segment-anything.git
+WORKDIR /root/arms_ws/src/segment-anything
+RUN . /root/py_global/bin/activate && pip install -e .
+
+# Download sam_vit_b_01ec64.pth
+WORKDIR /root/arms_ws/src/segment-anything/checkpoints
+RUN wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
+
+
+WORKDIR /root
+RUN . /root/py_global/bin/activate && pip install torch torchvision numpy opencv-python pillow
+
+# --- Repos for robot_workspace tmux (branches match current workspace) ---
+WORKDIR /root/arms_ws/src
+# aiortc for WebRTC server_ros.py (ports 8081/8082/8083)
+RUN --mount=type=ssh git clone -b main git@github.com:CroboticSolutions/aiortc_webrtc_ros.git aiortc
+# Skip aiortc in colcon (pyproject.toml license format breaks colcon; we use pip install aiortc)
+RUN touch /root/arms_ws/src/aiortc/COLCON_IGNORE
+# SAM interactive (segment-anything ROS2)
+RUN --mount=type=ssh git clone -b main git@github.com:CroboticSolutions/sam_ros2.git
+# USB camera
+RUN git clone -b main https://github.com/ros-drivers/usb_cam.git
+# ArUco markers (for hand-eye and stream)
+RUN --mount=type=ssh git clone -b mstigla/devel git@github.com:CroboticSolutions/aruco_markers.git
+# Hand-eye calibration
+RUN --mount=type=ssh git clone -b mstigla/devel git@github.com:CroboticSolutions/ros2_handeye_calibration.git
+# React/Vite GUI (npm run dev)
+RUN --mount=type=ssh git clone -b mstigleitner/devel git@github.com:CroboticSolutions/arm_api2_gui.git
+
+# aiortc server_ros.py deps (rclpy/cv_bridge from ROS, rest from pip)
+RUN . /root/py_global/bin/activate && pip install aiortc aiohttp av
+
+# Pin NumPy <2 so ROS Jazzy cv_bridge (built for NumPy 1.x) loads; opencv may warn but usually works
+RUN . /root/py_global/bin/activate && pip install "numpy<2"
+
+# NVM + Node for arm_api2_gui (single RUN so nvm is available for npm)
+ENV NVM_VERSION=0.40.1
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
+    && . "$HOME/.nvm/nvm.sh" \
+    && nvm install 20 \
+    && nvm use 20 \
+    && nvm alias default 20 \
+    && cd /root/arms_ws/src/arm_api2_gui && npm ci \
+    && ln -sf "$(which node)" /usr/local/bin/node \
+    && ln -sf "$(which npm)" /usr/local/bin/npm \
+    && ln -sf "$(which npx)" /usr/local/bin/npx
+
+# Hand-eye calibration writes to this file at runtime
+RUN mkdir -p /root/.ros
+
+# Re-run rosdep for new packages, then build full workspace (piper_gazebo, piper_with_gripper_moveit, sam_ros2, usb_cam, aruco_markers, hand_eye_calibration, etc.)
+# If hand_eye_calibration fails (e.g. missing detection_msgs), add that package to src and rosdep.
+WORKDIR /root/arms_ws
+RUN rosdep update && rosdep install --from-paths src --ignore-src -r -y || true
+# Use system Python so rosidl_generator_py finds numpy headers (arm_api2_msgs, aruco_markers_msgs, piper_msgs)
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && PATH=/usr/bin:\$PATH colcon build --symlink-install"
+
+# Tmuxinator config so container can run: tmuxinator robot_workspace
+# (Copy from host: cp ~/.config/tmuxinator/robot_workspace.yml .  then docker build)
+RUN mkdir -p /root/.config/tmuxinator
+COPY to_copy/robot_workspace.yml /root/.config/tmuxinator/robot_workspace.yml
+
+# Tmux config (copy from host: cp ~/.tmux.conf .  then docker build)
+COPY to_copy/.tmux.conf /root/.tmux.conf
 
 CMD ["bash"]
 
@@ -209,16 +309,15 @@ RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 # Clone the GUI
 WORKDIR /root/arms_ws/src
-RUN --mount=type=ssh git clone --single-branch --branch main git@github.com:CroboticSolutions/ros2_dash_gui.git
+RUN --mount=type=ssh git clone --single-branch --branch jazzy git@github.com:CroboticSolutions/ros2_dash_gui.git
 
 # Add a demo video bag
 WORKDIR /root/arms_ws/src/ros2_dash_gui
 RUN . ${VIRTUAL_ENV}/bin/activate && bash download_demo_bag.sh
 
-# Build the GUI as part of arms_ws
+# Build the GUI as part of arms_ws (unset VIRTUAL_ENV; use system Python so colcon/rosidl find numpy headers)
 WORKDIR /root/arms_ws/
-RUN bash -c "source /opt/ros/jazzy/setup.bash; colcon build --symlink-install"
-RUN echo "source /root/arms_ws/install/setup.bash" >> ~/.bashrc
+RUN bash -c "unset VIRTUAL_ENV; source /opt/ros/jazzy/setup.bash; PATH=/usr/bin:\$PATH colcon build --symlink-install"
 
 CMD ["bash"]
 

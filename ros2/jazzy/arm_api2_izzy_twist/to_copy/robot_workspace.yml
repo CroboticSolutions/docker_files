@@ -1,0 +1,52 @@
+# Tmuxinator config for robot workspace (replicates container setup)
+# Run: tmuxinator robot_workspace
+
+name: robot_workspace
+root: /root/arms_ws
+
+windows:
+  - main:
+      layout: tiled
+      panes:
+        - piper_gazebo:
+            - ros2 launch piper_gazebo piper_gz_sim.launch.py use_sim_time:=true
+        - moveit2_iface:
+            - sleep 10
+            - ros2 launch arm_api2 moveit2_simple_iface.launch.py robot_name:=piper use_sim_time:=true
+        - gui_dev:
+            - cd /root/arms_ws/src/arm_api2_gui/
+            - npm run dev
+        - bridge:
+            - sleep 11
+            - ros2 launch ros2_dash_gui bridge.launch.py
+        - moveit_rviz:
+            - sleep 12
+            - ros2 launch piper_with_gripper_moveit moveit_rviz.launch.py use_sim_time:=true
+        - raw_stream:
+            - cd /root/arms_ws/src/aiortc/examples/server
+            - export ROS_IMAGE_TOPIC=/piper/camera/image_raw
+            - sleep 10
+            - python3 server_ros.py --host 0.0.0.0 --port 8081 -v
+        - annotated_stream:
+            - cd /root/arms_ws/src/aiortc/examples/server
+            - export ROS_IMAGE_TOPIC=/sam/annotated_image
+            - sleep 10
+            - python3 server_ros.py --host 0.0.0.0 --port 8082 -v
+        - aruco_stream:
+            - cd /root/arms_ws/src/aiortc/examples/server
+            - export ROS_IMAGE_TOPIC=/aruco/result
+            - sleep 10
+            - python3 server_ros.py --host 0.0.0.0 --port 8083 -v
+        - sam_system:
+            - sleep 13
+            - source /root/py_global/bin/activate
+            - ros2 launch sam_ros2 sam_interactive.launch.py
+        - usb_cam:
+            - sleep 14
+            - ros2 launch usb_cam camera.launch.py use_sim_time:=true
+        - aruco_markers:
+            - sleep 15
+            - ros2 run aruco_markers aruco_markers --ros-args -p use_sim_time:=true -p marker_size:=0.04 -p camera_frame:=camera_optical_frame -p image_topic:=/piper/camera/image_raw -p camera_info_topic:=/piper/camera/camera_info -p dictionary:=DICT_4X4_1000
+        - hand_eye_calibration:
+            - sleep 16
+            - ros2 launch hand_eye_calibration calibration.launch.py tracking_base_frame:=camera_optical_frame tracking_marker_frame:=aruco_marker_0 robot_base_frame:=base_link robot_effector_frame:=link6 calibration_type:=eye-in-hand calibration_file:=/root/.ros/hand_eye_calibration.yaml

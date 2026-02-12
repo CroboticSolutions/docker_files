@@ -1,11 +1,14 @@
 services:
   ollama:
-    image: ollama/ollama
-    container_name: ollama
+    image: ollama/ollama:latest
+    container_name: ollama_new
     ports:
       - "11434:11434"
     volumes:
       - ollama:/root/.ollama
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     deploy:
       resources:
         reservations:
@@ -14,31 +17,7 @@ services:
               count: all
               capabilities: [gpu]
 
-  arm_api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: add_gui
-      ssh:
-        - default
-      args:
-        LLM_BACKEND: ollama
-    image: arm_api2_img:humble
-    container_name: arm_api2_cont
-    network_mode: "host"
-    privileged: true
-    volumes:
-      - /dev:/dev
-      - /tmp/.x11-unix:/tmp/.x11-unix
-      - ${SSH_AUTH_SOCK}:/ssh-agent
-    environment:
-      - SSH_AUTH_SOCK=/ssh-agent
-      - DISPLAY=${DISPLAY}
-      - TERM=xterm-256color
-    working_dir: /root/arm_ws/src/ros2_dash_gui/launch/
-    command: tmuxinator start
-    stdin_open: true
-    tty: true
+  
 
 volumes:
   ollama:

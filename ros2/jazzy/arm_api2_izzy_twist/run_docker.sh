@@ -1,9 +1,9 @@
 #!/bin/bash
 
-CONTAINER_NAME=ros2_jazzy_cont_new_new
-IMAGE_NAME=ros2_jazzy_cont_new_backup:latest
+CONTAINER_NAME=arm_api2_cont
+IMAGE_NAME=arm_api2_img:jazzy
 
-# Hook to the current SSH_AUTH_LOCK - since it changes
+# Hook to the current SSH_AUTH_SOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/
 ln -sf $SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
 

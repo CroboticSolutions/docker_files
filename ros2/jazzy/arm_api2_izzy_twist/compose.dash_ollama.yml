@@ -1,0 +1,53 @@
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    # Pull LLaVA on first start so it's available without manual pull (stored in volume)
+    command: ["sh", "-c", "ollama pull llava && exec ollama serve"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  arm_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: add_gui
+      ssh:
+        - default
+      args:
+        LLM_BACKEND: ollama
+    image: arm_api2_img:jazzy
+    container_name: arm_api2_cont
+    network_mode: "host"
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - /dev:/dev
+      - /tmp/.x11-unix:/tmp/.x11-unix
+      - ${SSH_AUTH_SOCK}:/ssh-agent
+    environment:
+      - SSH_AUTH_SOCK=/ssh-agent
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+    working_dir: /root
+    command: tmuxinator start robot_workspace
+    stdin_open: true
+    tty: true
+
+volumes:
+  ollama:

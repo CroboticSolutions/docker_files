@@ -26,6 +26,7 @@ Attach to a running container:
 ```bash
 docker exec -it arm_api2_cont bash
 ```
+## Run Tmuxinator
 
 Tmuxinator to start the workspace:
 ```bash

@@ -1,0 +1,91 @@
+
+FROM ros:noetic-ros-base
+
+LABEL maintainer ana.milas@fer.hr
+
+# Use ARG - persists only during docker build
+# https://github.com/moby/moby/issues/4032#issuecomment-192327844
+ARG CATKIN_WORKSPACE=uav_ws
+ARG DEBIAN_FRONTEND=noninteractive
+ARG HOME=/root
+ARG ROS_DISTRO=noetic
+
+# Install all the things to stop docker build from breaking
+RUN ln -fs /usr/share/zoneinfo/Europe/Zagreb /etc/localtime && \
+    apt-get update && apt-get install -q -y \
+    git \
+    sudo \
+    lsb-release \
+    gnupg2 \
+    apt-utils \
+    dialog \
+    curl \
+    nano \
+    tmux \
+    tmuxinator \
+    tzdata && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+
+# install ssh client and git
+RUN apt-get install openssh-client git
+
+# download public key for github.com
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+# Mitigate interactive prompt for choosing keyboard type
+COPY ./to_copy/keyboard /etc/default/keyboard
+# Copy configuration files
+COPY ./to_copy/aliases $HOME/.bash_aliases
+COPY ./to_copy/nanorc $HOME/.nanorc
+COPY ./to_copy/tmux $HOME/.tmux.conf
+COPY ./to_copy/ranger $HOME/.config/ranger/rc.conf
+
+# Install dependencies
+RUN apt-get update && apt-get install -q -y \
+    ros-$ROS_DISTRO-octomap-ros \
+    ros-$ROS_DISTRO-octomap-ros \
+    ros-$ROS_DISTRO-octomap \ 
+    ros-$ROS_DISTRO-octomap-server \
+    ros-$ROS_DISTRO-octomap-msgs \
+    ros-$ROS_DISTRO-octomap-rviz-plugins \
+    ros-$ROS_DISTRO-octovis \
+    ros-$ROS_DISTRO-ompl \
+    ros-$ROS_DISTRO-eigen-conversions \
+    libompl-dev \
+    libqglviewer-dev-qt5 \
+    qtbase5-dev \
+    libqt5opengl5-dev \
+    python3-catkin-tools \
+    libdlib-dev \
+    python-is-python3 \
+    python3-pip python3-dev
+
+# Install toppra dependencies
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade "numpy>=1.19.5,<1.27"
+RUN pip3 install toppra
+
+# Clone and build larics_motion_planning
+WORKDIR $HOME/$CATKIN_WORKSPACE/src
+RUN --mount=type=ssh git clone git@github.com:larics/larics_motion_planning.git
+RUN --mount=type=ssh git clone git@github.com:AnaBatinovic/topp_ros.git
+WORKDIR $HOME/$CATKIN_WORKSPACE/src/larics_motion_planning
+RUN git checkout exploration
+
+# Clone and build uav_frontier_exploration_3d
+WORKDIR $HOME/$CATKIN_WORKSPACE/src
+RUN --mount=type=ssh git clone git@github.com:AnaBatinovic/uav_frontier_exploration_3d.git
+RUN git clone https://github.com/larics/mean_shift_clustering.git
+RUN git clone https://github.com/AnaBatinovic/octomap-1.7.2.git
+RUN git clone https://github.com/OctoMap/octomap_ros.git
+
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
+RUN echo "source ~/$CATKIN_WORKSPACE/devel/setup.bash" >> ~/.bashrc
+RUN echo "octomap_DIR=~/$CATKIN_WORKSPACE/src/octomap-1.7.2/octomap/lib/cmake/octomap" >> ~/.bashrc
+WORKDIR $HOME/$CATKIN_WORKSPACE
+RUN bash -c " \
+    source /opt/ros/$ROS_DISTRO/setup.bash && \
+    catkin config --skiplist octovis && \
+    catkin build \
+"
+WORKDIR $HOME/$CATKIN_WORKSPACE/src/uav_frontier_exploration_3d/scripts/startup

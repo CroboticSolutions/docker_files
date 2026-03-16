@@ -1,4 +1,5 @@
 FROM ubuntu:jammy
+#FROM arm64v8/ubuntu:jammy
 
 # Setup environment
 ENV LANG=C.UTF-8
@@ -108,7 +109,8 @@ COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf
 # run libtinyxml2
 RUN apt-get install -y \
     libtinyxml2-dev \
-    liblz4-dev
+    liblz4-dev \
+    gcc-arm-none-eabi
 
 # robotpkg installation [teleykb3 installation]
 WORKDIR $HOME/src/robotpkg

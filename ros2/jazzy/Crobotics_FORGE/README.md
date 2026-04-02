@@ -39,6 +39,22 @@ From this folder:
 docker build -t ros2_img:latest .
 ```
 
+### BuildKit + SSH (required for private repos)
+
+When `CROBOTIC_FORGE=yes` and/or `USE_UR_ROBOT=yes`, the Docker build clones private repositories via `git@github.com`.  
+Use BuildKit SSH forwarding:
+
+```bash
+DOCKER_BUILDKIT=1 docker build --ssh default -t ros2_img:latest .
+```
+
+Before building, verify your SSH agent has a loaded key:
+
+```bash
+ssh-add -l
+ssh -T git@github.com
+```
+
 ### Build Arguments
 
 The `Dockerfile` supports these build args:
@@ -73,7 +89,7 @@ docker build -t ros2_img:latest \
 Full FORGE build (requires access to private repos):
 
 ```bash
-docker build -t ros2_img:latest \
+DOCKER_BUILDKIT=1 docker build --ssh default -t ros2_img:latest \
   --build-arg USE_UR_ROBOT=yes \
   --build-arg INSTALL_GAZEBO=yes \
   --build-arg CROBOTIC_FORGE=yes \
@@ -168,7 +184,18 @@ This launches multiple panes for:
 ## Troubleshooting
 
 - SSH clone fails during build:
-  - You are probably missing access to private repos or SSH agent forwarding.
+  - If you see `Host key verification failed`, build with:
+    ```bash
+    DOCKER_BUILDKIT=1 docker build --ssh default ...
+    ```
+  - Confirm SSH on host works and key is loaded:
+    ```bash
+    ssh-add -l
+    ssh -T git@github.com
+    ```
+  - If you do not need private repos, disable them:
+    - `--build-arg CROBOTIC_FORGE=no`
+    - `--build-arg USE_UR_ROBOT=no`
 - GUI apps do not open:
   - Check `DISPLAY`, `xhost`, and `/tmp/.x11-unix` mount.
 - Container name conflict:

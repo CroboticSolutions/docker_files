@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 FROM ubuntu:noble AS ros2_base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -51,6 +52,7 @@ RUN ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime && echo "${TZ}" > /etc/ti
       mesa-utils \
       nano \
       net-tools \
+      openssh-client \
       python3-pip \
       python3-tk \
       python3-venv \
@@ -84,6 +86,7 @@ RUN apt-get update && \
       ros-${ROS2_DISTRO}-generate-parameter-library \
       ros-${ROS2_DISTRO}-ackermann-msgs \
       ros-${ROS2_DISTRO}-backward-ros \
+      ros-${ROS2_DISTRO}-moveit \
       ros-${ROS2_DISTRO}-navigation2 \
       ros-${ROS2_DISTRO}-nav2-bringup \
       ros-${ROS2_DISTRO}-moveit-servo \
@@ -135,16 +138,21 @@ RUN if [ "${INSTALL_GAZEBO}" = "yes" ]; then \
 WORKDIR /root/arms_ws/src
 
 RUN git clone -b multiple_ur_robots https://github.com/CroboticSolutions/arm_api2.git && \
-    git clone https://github.com/CroboticSolutions/arm_api2_msgs.git
+    git clone https://github.com/CroboticSolutions/arm_api2_msgs.git && \
+    git clone https://github.com/ros-industrial/ur_msgs.git
 
-RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
+RUN mkdir -p -m 0700 /root/.ssh && \
+    ssh-keyscan -H github.com >> /root/.ssh/known_hosts
+
+RUN --mount=type=ssh if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
       git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/ros2_dash_gui.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/ros2_robotiq_gripper.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/sam_ros2.git; \
     fi
 
-RUN if [ "${USE_UR_ROBOT}" = "yes" ]; then \
+RUN --mount=type=ssh if [ "${USE_UR_ROBOT}" = "yes" ]; then \
+      git clone -b master https://github.com/UniversalRobots/Universal_Robots_Client_Library.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/Universal_Robots_ROS2_Driver.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/Universal_Robots_ROS2_GZ_Simulation.git && \
       git clone -b jazzy https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git; \
@@ -164,7 +172,12 @@ RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
 
 RUN rosdep init || true
 RUN rosdep update && \
-    rosdep install --from-paths src --ignore-src -r -y
+    # Skip non-Jazzy/unreleased keys and test/lint deps so container builds from mixed branches.
+    rosdep install --from-paths src --ignore-src -r -y --rosdistro "${ROS2_DISTRO}" \
+      --dependency-types build \
+      --dependency-types build_export \
+      --dependency-types exec \
+      --skip-keys "moveit_ros serial liburdfdom_tools gz_ros2_control ur_client_library ur_msgs ament_clang_format ament_clang_tidy joint_state_publisher_gui warehouse_ros_sqlite hardware_interface_testing ros2_controllers_test_nodes"
 
 RUN pip3 install --no-cache-dir \
       empy \
@@ -182,7 +195,8 @@ RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
     fi
 
 RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    colcon build --symlink-install
+    colcon build --symlink-install \
+      --packages-skip robotiq_driver robotiq_controllers robotiq_hardware_tests
 
 # -----------------------------------------------------------------------------
 # Interactive shell defaults

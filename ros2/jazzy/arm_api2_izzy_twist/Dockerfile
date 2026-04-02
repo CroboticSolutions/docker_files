@@ -259,11 +259,10 @@ RUN rosdep update && rosdep install --from-paths src --ignore-src -r -y || true
 RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && PATH=/usr/bin:\$PATH colcon build --symlink-install"
 
 # Tmuxinator config so container can run: tmuxinator robot_workspace
-# (Copy from host: cp ~/.config/tmuxinator/robot_workspace.yml .  then docker build)
 RUN mkdir -p /root/.config/tmuxinator
 COPY to_copy/robot_workspace.yml /root/.config/tmuxinator/robot_workspace.yml
 
-# Tmux config (copy from host: cp ~/.tmux.conf .  then docker build)
+# Tmux config
 COPY to_copy/.tmux.conf /root/.tmux.conf
 
 CMD ["bash"]
@@ -320,4 +319,5 @@ WORKDIR /root/arms_ws/
 RUN bash -c "unset VIRTUAL_ENV; source /opt/ros/jazzy/setup.bash; PATH=/usr/bin:\$PATH colcon build --symlink-install"
 
 CMD ["bash"]
+
 

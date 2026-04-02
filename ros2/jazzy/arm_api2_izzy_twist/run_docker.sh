@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=arm_api2_cont
-IMAGE_NAME=arm_api2_img:jazzy
+CONTAINER_NAME=arm_api2_cont_new_new
+IMAGE_NAME=arm_api2_img:jazzy_izzy_twist_new_new
 
 # Hook to the current SSH_AUTH_SOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/

@@ -1,0 +1,14 @@
+name: ur_gui_stack
+root: /root/arms_ws
+pre_window: source /root/py_global/bin/activate && source /opt/ros/jazzy/setup.bash && source /root/arms_ws/install/setup.bash
+
+windows:
+  - services:
+      layout: tiled
+      panes:
+        - bash -lc 'ros2 launch ros2_dash_gui bridge.launch.py websocket_port:=9094 robot_namespace_prefix:=ur'
+        - bash -lc 'cd ~/arms_ws/src/arm_api2_gui && npm run dev -- --port 5174'
+        - bash -lc 'python3 /root/arms_ws/src/aiortc_webrtc_ros/examples/server/server_ros.py --host 0.0.0.0 --port 8081'
+        - bash -lc 'python3 /root/arms_ws/src/aiortc_webrtc_ros/examples/server/server_ros.py --host 0.0.0.0 --port 8082'
+        - bash -lc 'cd /root/arms_ws/src/arm_api2_gui/launch_server && uvicorn main:app --host 127.0.0.1 --port 8000'
+        - bash -lc 'ros2 launch sam_ros2 sam_interactive.launch.py'

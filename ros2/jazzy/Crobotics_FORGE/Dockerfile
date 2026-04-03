@@ -10,6 +10,7 @@ ARG USE_UR_ROBOT="no"
 ARG INSTALL_GAZEBO="no"
 ARG CROBOTIC_FORGE="no"
 ARG PY_VENV=/root/py_global
+ARG NODE_VERSION=20
 
 # -----------------------------------------------------------------------------
 # Environment
@@ -27,6 +28,8 @@ ENV HOME=/root \
     RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}]: {message}"
 
 ENV PATH="${PY_VENV}/bin:${PATH}"
+
+ENV NVM_DIR=/root/.nvm
 
 # -----------------------------------------------------------------------------
 # Base system packages
@@ -66,6 +69,23 @@ RUN ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime && echo "${TZ}" > /etc/ti
 
 # Python virtualenv available globally
 RUN python3 -m venv "${PY_VENV}" --system-site-packages
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      nvidia-utils-580 \
+      libnvidia-compute-580 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Node.js via nvm (for npm-based tooling)
+RUN curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+    source "${NVM_DIR}/nvm.sh" && \
+    nvm install "${NODE_VERSION}" && \
+    nvm alias default "${NODE_VERSION}" && \
+    nvm use default && \
+    ln -sf "$(command -v node)" /usr/local/bin/node && \
+    ln -sf "$(command -v npm)" /usr/local/bin/npm
+
+ENV PATH="${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PY_VENV}/bin:${PATH}"
 
 # -----------------------------------------------------------------------------
 # ROS 2 apt repository
@@ -126,6 +146,7 @@ RUN if [ "${INSTALL_GAZEBO}" = "yes" ]; then \
       apt-get update && \
       apt-get install -y --no-install-recommends gz-ionic && \
       apt-get install -y --no-install-recommends \
+        ros-${ROS2_DISTRO}-gz-ros2-control \
         ros-${ROS2_DISTRO}-ros-gz-sim \
         ros-${ROS2_DISTRO}-ros-gz-bridge || \
       apt-get install -y --no-install-recommends ros-${ROS2_DISTRO}-ros-gz || true; \
@@ -146,9 +167,17 @@ RUN mkdir -p -m 0700 /root/.ssh && \
 
 RUN --mount=type=ssh if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
       git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git && \
+      git clone -b multiple_ur_robots git@github.com:CroboticSolutions/arm_api2_gui.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/ros2_dash_gui.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/ros2_robotiq_gripper.git && \
       git clone -b multiple_ur_robots git@github.com:CroboticSolutions/sam_ros2.git; \
+    fi
+
+RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
+      source "${NVM_DIR}/nvm.sh" && \
+      nvm use "${NODE_VERSION}" && \
+      cd /root/arms_ws/src/arm_api2_gui && \
+      npm install --legacy-peer-deps; \
     fi
 
 RUN --mount=type=ssh if [ "${USE_UR_ROBOT}" = "yes" ]; then \
@@ -184,6 +213,15 @@ RUN pip3 install --no-cache-dir \
       catkin_pkg \
       lark
 
+RUN pip3 install --no-cache-dir \
+      aiohttp \
+      aiortc \
+      flask \
+      flask_cors \
+      uvicorn \
+      fastapi \
+      websockets
+
 RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
       pip3 install --no-cache-dir \
         git+https://github.com/facebookresearch/segment-anything.git \
@@ -193,6 +231,16 @@ RUN if [ "${CROBOTIC_FORGE}" = "yes" ]; then \
         onnxruntime \
         onnx; \
     fi
+
+RUN source /root/py_global/bin/activate && \
+    python -m pip install --upgrade pip && \
+    python -m pip uninstall -y torch torchvision torchaudio && \
+    pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# Keep NumPy <2 as the final pip state for ROS cv_bridge compatibility.
+RUN source /root/py_global/bin/activate && \
+    pip uninstall -y numpy && \
+    pip install --no-cache-dir --force-reinstall "numpy<2"
 
 RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     colcon build --symlink-install \
@@ -205,6 +253,8 @@ RUN mkdir -p /root/.tmuxinator
 COPY ur_gui_stack.yml /root/.tmuxinator/ur_gui_stack.yml
 
 RUN echo "" >> /root/.bashrc && \
+    echo "export NVM_DIR=${NVM_DIR}" >> /root/.bashrc && \
+    echo "[ -s \"${NVM_DIR}/nvm.sh\" ] && source \"${NVM_DIR}/nvm.sh\"" >> /root/.bashrc && \
     echo "source ${PY_VENV}/bin/activate" >> /root/.bashrc && \
     echo "source /opt/ros/${ROS2_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source /root/arms_ws/install/setup.bash" >> /root/.bashrc && \

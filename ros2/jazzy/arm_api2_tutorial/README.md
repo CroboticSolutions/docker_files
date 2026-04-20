@@ -9,7 +9,7 @@ This `Dockerfile` builds a container aimed solely at the **[pick-and-place tutor
 | ROS 2 | Jazzy (`desktop`, MoveIt, MoveIt Servo, `ros2_control`, Cyclone DDS) |
 | Simulation | Gazebo Ionic + `ros_gz` (sim / bridge) |
 | Workspace | `/root/arms_ws` — sources under `src/`, build under `install/` |
-| Repositories | `arm_api2` (branch `jazzy`), `arm_api2_msgs`, Crobotic **UR driver** and **UR GZ simulation** (branch `multiple_ur_robots`), UR **Description** (branch `jazzy`) |
+| Repositories | `arm_api2` (branch `jazzy`), `arm_api2_msgs`, Crobotic **UR driver**, **UR GZ simulation**, and **ros2_robotiq_gripper** (branch `multiple_ur_robots`), **`tylerjw/serial`** (branch `ros2`, CMake `serial` for `robotiq_driver`), UR **Description** (branch `jazzy`) |
 
 Build argument:
 
@@ -20,36 +20,63 @@ Build argument:
 - [Docker](https://docs.docker.com/engine/install/) (or a compatible engine)
 - For **GUI** (Gazebo, RViz): X11 or Wayland with `xhost` / tunneling, or VNC — otherwise the simulator may not show a window (depends on your setup)
 
-## Build
+## Build and run (recommended)
 
-From the directory that contains the `Dockerfile` (e.g. this repo root):
+From the directory that contains `Dockerfile` and `first-run.sh`:
+
+1. **Build** the image:
+
+   ```bash
+   docker build -t arm_api2:tutorial .
+   ```
+
+2. **Start** a container (login shell; ROS and workspace sourced via `.bashrc`):
+
+   ```bash
+   chmod +x first-run.sh   # once
+   ./first-run.sh --no-build
+   ```
+
+   Or let the script **build and run** in one step (same tag `arm_api2:tutorial`):
+
+   ```bash
+   ./first-run.sh
+   ```
+
+Useful flags:
 
 ```bash
-docker build -t arm-api2-tutorial .
+./first-run.sh --help
+./first-run.sh --x11        # X11 forwarding for Gazebo / RViz (on the host: e.g. xhost +local:root)
+./first-run.sh --net-host   # host network (often helps ROS 2 DDS)
 ```
 
-Another distro (rare):
+Override the image name if needed:
 
 ```bash
-docker build -t arm-api2-tutorial --build-arg ROS2_DISTRO=jazzy .
+IMAGE_NAME=myrepo:mytag ./first-run.sh --no-build
 ```
 
-## Running the container
+## Manual `docker run` (optional)
 
-Interactive shell (ROS and the workspace are sourced from `.bashrc` after `bash -l` or manual `source`):
+If you built with `docker build -t arm_api2:tutorial .`:
 
 ```bash
-docker run -it --rm arm-api2-tutorial bash -l
+docker run -it --rm arm_api2:tutorial bash -l
 ```
 
 For **Gazebo/RViz on screen** on Linux (X11, simplified):
 
 ```bash
 xhost +local:root
-docker run -it --rm -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw arm-api2-tutorial bash -l
+docker run -it --rm -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw arm_api2:tutorial bash -l
 ```
 
-For more complex setups (GPU, networking, devices), adjust `docker run` to match your system.
+Another distro when building (rare):
+
+```bash
+docker build -t arm_api2:tutorial --build-arg ROS2_DISTRO=jazzy .
+```
 
 ## Tutorial: two terminals in the container
 

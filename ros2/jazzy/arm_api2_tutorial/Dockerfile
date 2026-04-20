@@ -1,6 +1,7 @@
-# Minimal image for the arm_api2 pick-and-place tutorial:
-# https://github.com/CroboticSolutions/arm_api2/blob/multiple_ur_robots/tutorials/README.md
-# Prerequisites: arm_api2, ur_simulation_gz, ur_moveit_config + Gazebo sim.
+# arm_api2 pick-and-place tutorial image (ROS 2 Jazzy, Ubuntu noble).
+# Build:  docker build -t arm_api2:tutorial .
+# Run:    ./first-run.sh   (uses the same tag by default; see README.md)
+# Tutorial: https://github.com/CroboticSolutions/arm_api2/blob/jazzy/tutorials/README.md
 
 FROM ubuntu:noble
 
@@ -81,6 +82,11 @@ RUN git clone -b jazzy https://github.com/CroboticSolutions/arm_api2.git && \
     git clone -b multiple_ur_robots https://github.com/CroboticSolutions/ros2_robotiq_gripper.git && \
     git clone -b ros2 https://github.com/tylerjw/serial.git && \
     git clone -b jazzy https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
+
+# Jazzy controller_manager spawner treats a bare `robotiq_gripper_controller:` key as an error when
+# spawning under /ur1 (FATAL + misleading "not launching"); `/**/robotiq_gripper_controller` is enough.
+RUN perl -0777 -i -pe 's/\nrobotiq_gripper_controller:\n  ros__parameters:\n    joint: robotiq_85_left_knuckle_joint\n    state_interfaces:\n      - position\n      - velocity\n    allow_stalling: true\n    stall_timeout: 0.05\n    goal_tolerance: 0.003\n\n/\n/s' \
+    /root/arms_ws/src/Universal_Robots_ROS2_GZ_Simulation/ur_simulation_gz/config/ur_controllers.yaml
 
 WORKDIR /root/arms_ws
 

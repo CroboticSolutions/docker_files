@@ -20,7 +20,7 @@ Build argument:
 - [Docker](https://docs.docker.com/engine/install/) (or a compatible engine)
 - For **GUI** (Gazebo, RViz): X11 or Wayland with `xhost` / tunneling, or VNC — otherwise the simulator may not show a window (depends on your setup)
 
-## Build and run (recommended)
+## Build and run
 
 From the directory that contains `Dockerfile` and `first-run.sh`:
 
@@ -30,47 +30,30 @@ From the directory that contains `Dockerfile` and `first-run.sh`:
    docker build -t arm_api2:tutorial .
    ```
 
-2. **Start** a container (login shell; ROS and workspace sourced via `.bashrc`):
+2. **Run** the container (via `first-run.sh` in this repo):
 
    ```bash
    chmod +x first-run.sh   # once
-   ./first-run.sh --no-build
-   ```
-
-   Or let the script **build and run** in one step (same tag `arm_api2:tutorial`):
-
-   ```bash
    ./first-run.sh
    ```
 
-Useful flags:
+   What `first-run.sh` does (edit the script if you want other names or flags):
 
-```bash
-./first-run.sh --help
-./first-run.sh --x11        # X11 forwarding for Gazebo / RViz (on the host: e.g. xhost +local:root)
-./first-run.sh --net-host   # host network (often helps ROS 2 DDS)
-```
+   - **Image:** `arm_api2:tutorial`
+   - **Container name:** `arm_api2_tutorial`
+   - **`docker run`:** `-it`, `--network host`, `--privileged`, bind-mount `/dev`, bind-mount `/tmp/.x11-unix` → `/tmp/.x11-unix`, `DISPLAY`, `TERM=xterm-256color`, interactive `/bin/bash`
+   - **SSH agent:** `ln -sf $SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock` on the host, then mount `~/.ssh/ssh_auth_sock` → `/ssh-agent` with `SSH_AUTH_SOCK=/ssh-agent` ([tmux / VS Code forwarding notes](https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/))
 
-Override the image name if needed:
+   Before the first run, create `~/.ssh` on the host if it does not exist. If a container with the same name is already there, remove it: `docker rm -f arm_api2_tutorial`.
 
-```bash
-IMAGE_NAME=myrepo:mytag ./first-run.sh --no-build
-```
+   For **Gazebo / RViz** on the host you may need: `xhost +local:root`.  
+   Many Linux systems expose the X11 socket as **`/tmp/.X11-unix`** (capital `X`); if the GUI does not show, align the host path in `first-run.sh` with your system.
 
-## Manual `docker run` (optional)
+   A **second shell** in the same container:
 
-If you built with `docker build -t arm_api2:tutorial .`:
-
-```bash
-docker run -it --rm arm_api2:tutorial bash -l
-```
-
-For **Gazebo/RViz on screen** on Linux (X11, simplified):
-
-```bash
-xhost +local:root
-docker run -it --rm -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw arm_api2:tutorial bash -l
-```
+   ```bash
+   docker exec -it arm_api2_tutorial /bin/bash
+   ```
 
 Another distro when building (rare):
 
@@ -80,7 +63,7 @@ docker build -t arm_api2:tutorial --build-arg ROS2_DISTRO=jazzy .
 
 ## Tutorial: two terminals in the container
 
-After `bash -l` inside the container, follow the [official tutorial README](https://github.com/CroboticSolutions/arm_api2/blob/jazzy/tutorials/README.md).
+Inside the container you get interactive `/bin/bash`; the image’s `/root/.bashrc` sources ROS Jazzy and `/root/arms_ws/install/setup.bash`, so that environment should load automatically. Then follow the [official tutorial README](https://github.com/CroboticSolutions/arm_api2/blob/jazzy/tutorials/README.md).
 
 **Terminal 1** — simulation + MoveIt:
 

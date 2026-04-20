@@ -1,6 +1,8 @@
 # arm_api2 pick-and-place tutorial image (ROS 2 Jazzy, Ubuntu noble).
+#
 # Build:  docker build -t arm_api2:tutorial .
-# Run:    ./first-run.sh   (uses the same tag by default; see README.md)
+# Run:    ./first-run.sh   (expects image arm_api2:tutorial, container arm_api2_tutorial — see README)
+#
 # Tutorial: https://github.com/CroboticSolutions/arm_api2/blob/jazzy/tutorials/README.md
 
 FROM ubuntu:noble

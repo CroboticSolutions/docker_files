@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  isaac-sim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ROS2: "yes"
+        INSTALL_ROS2_BRIDGE: "yes"
+    image: isaac-sim-ros2:jazzy
+    container_name: isaac_sim_ros2_dev
+    runtime: nvidia
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,video
+      - ACCEPT_EULA=Y
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/root/.Xauthority:rw
+      - ./workspace:/root/workspace
+      - ./isaac_projects:/root/isaac_projects
+      - /dev/dri:/dev/dri
+      - /etc/ssl/certs:/etc/ssl/certs:ro
+    networks:
+      - ros2_network
+    stdin_open: true
+    tty: true
+    command: bash
+    # Enable GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  ros2_network:
+    driver: bridge

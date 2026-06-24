@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mujoco:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ROS2: "yes"
+        MUJOCO_VERSION: "3.1.0"
+    image: ros2-mujoco:jazzy
+    container_name: ros2_mujoco_dev
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/root/.Xauthority:rw
+      - ./workspace:/root/workspace
+      - /dev/dri:/dev/dri
+    networks:
+      - ros2_network
+    stdin_open: true
+    tty: true
+    command: bash
+    # Uncomment below for GPU support (NVIDIA Docker runtime)
+    # runtime: nvidia
+
+networks:
+  ros2_network:
+    driver: bridge

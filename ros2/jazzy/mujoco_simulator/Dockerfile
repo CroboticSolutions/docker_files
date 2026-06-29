@@ -38,7 +38,10 @@ RUN apt-get update && \
       htop \
       libegl1 \
       libgl1 \
+      libglx0 \
       libglu1-mesa \
+      libxext6 \
+      libxrender-dev \
       libxml2-dev \
       libxslt1-dev \
       libhdf5-dev \
@@ -84,15 +87,6 @@ RUN if [ "${INSTALL_ROS2}" = "yes" ]; then \
       colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && \
       colcon mixin update default; \
     fi
-
-# Install MuJoCo dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      libgl1-mesa-glx \
-      libglx0 \
-      libxext6 \
-      libxrender-dev && \
-    rm -rf /var/lib/apt/lists/*
 
 # Install MuJoCo via pip in virtual environment
 RUN source "${PY_VENV}/bin/activate" && \

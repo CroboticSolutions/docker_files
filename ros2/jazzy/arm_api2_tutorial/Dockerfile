@@ -5,7 +5,10 @@
 #
 # Tutorial: https://github.com/CroboticSolutions/arm_api2/blob/jazzy/tutorials/README.md
 
-FROM ubuntu:noble
+# ubuntu:noble digest as of 2026-07-07; re-resolve with:
+#   docker manifest inspect ubuntu:noble  (or check the tag page on Docker Hub)
+# if you deliberately want a newer point release.
+FROM ubuntu:noble@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -69,26 +72,19 @@ RUN curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
       > /etc/apt/sources.list.d/gazebo-stable.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends gz-ionic && \
-    apt-get install -y --no-install-recommends \
+    (apt-get install -y --no-install-recommends \
       ros-${ROS2_DISTRO}-ros-gz-sim \
       ros-${ROS2_DISTRO}-ros-gz-bridge || \
-    apt-get install -y --no-install-recommends ros-${ROS2_DISTRO}-ros-gz || true && \
+     apt-get install -y --no-install-recommends ros-${ROS2_DISTRO}-ros-gz) && \
     rm -rf /var/lib/apt/lists/*
 
+# Every repo is pinned to an exact commit SHA (not a branch head) so a rebuild always
+# fetches the same code. Bump a pin here deliberately when you want new upstream changes;
+# regenerate with `vcs export --exact src > workspace.repos` from a known-good workspace.
+COPY workspace.repos /root/arms_ws/workspace.repos
+
 WORKDIR /root/arms_ws/src
-
-RUN git clone -b jazzy https://github.com/CroboticSolutions/arm_api2.git && \
-    git clone https://github.com/CroboticSolutions/arm_api2_msgs.git && \
-    git clone -b multiple_ur_robots https://github.com/CroboticSolutions/Universal_Robots_ROS2_Driver.git && \
-    git clone -b multiple_ur_robots https://github.com/CroboticSolutions/Universal_Robots_ROS2_GZ_Simulation.git && \
-    git clone -b multiple_ur_robots https://github.com/CroboticSolutions/ros2_robotiq_gripper.git && \
-    git clone -b ros2 https://github.com/tylerjw/serial.git && \
-    git clone -b jazzy https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
-
-# Jazzy controller_manager spawner treats a bare `robotiq_gripper_controller:` key as an error when
-# spawning under /ur1 (FATAL + misleading "not launching"); `/**/robotiq_gripper_controller` is enough.
-RUN perl -0777 -i -pe 's/\nrobotiq_gripper_controller:\n  ros__parameters:\n    joint: robotiq_85_left_knuckle_joint\n    state_interfaces:\n      - position\n      - velocity\n    allow_stalling: true\n    stall_timeout: 0.05\n    goal_tolerance: 0.003\n\n/\n/s' \
-    /root/arms_ws/src/Universal_Robots_ROS2_GZ_Simulation/ur_simulation_gz/config/ur_controllers.yaml
+RUN vcs import --shallow < /root/arms_ws/workspace.repos
 
 WORKDIR /root/arms_ws
 

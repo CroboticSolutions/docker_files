@@ -1,0 +1,29 @@
+repositories:
+  arm_api2:
+    type: git
+    url: https://github.com/CroboticSolutions/arm_api2.git
+    version: 6b2f049a0c13335b2946e78057bdf18b31755803
+  arm_api2_msgs:
+    type: git
+    url: https://github.com/CroboticSolutions/arm_api2_msgs.git
+    version: 9132fa7d2ca02264da6071680518e54eab37ff78
+  Universal_Robots_ROS2_Driver:
+    type: git
+    url: https://github.com/CroboticSolutions/Universal_Robots_ROS2_Driver.git
+    version: 5c75a8e3ba72d2ddf73307e8a2e65a1253c9bc4f
+  Universal_Robots_ROS2_GZ_Simulation:
+    type: git
+    url: https://github.com/CroboticSolutions/Universal_Robots_ROS2_GZ_Simulation.git
+    version: 5e0a4a2540ea45a003ee305b2267bcba72f1a1bb
+  ros2_robotiq_gripper:
+    type: git
+    url: https://github.com/CroboticSolutions/ros2_robotiq_gripper.git
+    version: 689c5261ce15bfb0ccfdfbe5e8c7cd6f4edfa008
+  serial:
+    type: git
+    url: https://github.com/tylerjw/serial.git
+    version: d8d160678aa0b31cdf467c052b954fa287cc6cdf
+  Universal_Robots_ROS2_Description:
+    type: git
+    url: https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
+    version: 860b4efed8720511f7c6b507c145f66b7254f6a5

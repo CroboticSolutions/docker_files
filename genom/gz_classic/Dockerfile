@@ -233,6 +233,8 @@ RUN --mount=type=ssh bash -c 'if [ "$SETUP_ROS_GENOM_BRIDGE" = "true" ]; then \
   fi'
 
 COPY ./scripts/minithex_demo.yml /root/.tmuxinator/minithex_demo.yml
+COPY ./scripts/real_minithex_demo.yml /root/.tmuxinator/real_minithex_demo.yml
+COPY ./scripts/sim_minithex_demo.yml /root/.tmuxinator/sim_minithex_demo.yml
 
 # ============================================================
 # REACT_UI Stage: Extends base with GUI support

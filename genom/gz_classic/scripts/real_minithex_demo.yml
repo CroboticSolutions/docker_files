@@ -1,0 +1,30 @@
+# ~/.tmuxinator/real_minithex_demo.yml
+# To use: tmuxinator start real_minithex_demo
+
+name: real_minithex_demo
+root: ~/
+
+windows:
+  - minithex:
+      layout: tiled
+      panes:
+        # Pane 1: Launch ROS lab contact NDT
+        - roslaunch:
+            - roslaunch genom_ros_ctl slam_contact_ndt.launch
+        # Pane 2: Launch NDT demo script
+        - ndt_demo:
+            - cd ~/devel/minithex-cntrl-python-scripts/sh
+            - sleep 5  # Wait for NDT to initialize
+            - ./launch_ndt_demo_ros.sh
+        # Pane 3: Genomix Python connection
+        - minithex_ctl:
+            - sleep 15  # Wait for other components to initialize
+            - roslaunch genom_ros_ctl full_minithex_ros_ctl.launch sim:=false
+        # Pane 4: Start GUI 
+        - react_gui:
+            - sleep 20
+            - cd /root/devel/minithex_react_gui; npm run dev
+        # Pane 5: Start ROS-GUI bridge 
+        - ros_gui_bridge:
+            - sleep 25
+            - roslaunch ros_gui_bridge bridge.launch

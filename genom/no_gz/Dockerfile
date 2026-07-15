@@ -1,4 +1,5 @@
 FROM ubuntu:jammy
+#FROM arm64v8/ubuntu:jammy
 
 # Setup environment
 ENV LANG=C.UTF-8
@@ -108,7 +109,8 @@ COPY ./to_copy/ros_robotpkg.conf $HOME/openrobots/etc/robotpkg.conf
 # run libtinyxml2
 RUN apt-get install -y \
     libtinyxml2-dev \
-    liblz4-dev
+    liblz4-dev \
+    gcc-arm-none-eabi
 
 # robotpkg installation [teleykb3 installation]
 WORKDIR $HOME/src/robotpkg
@@ -123,12 +125,15 @@ RUN mkdir -p $HOME/scripts
 COPY ./scripts/env.sh /root/scripts/env.sh
 RUN cat /root/scripts/env.sh >> ~/.bashrc
 
-# Build phynt for devel
-WORKDIR $HOME/devel/
+# Build phynt and rotorcraft for devel
+WORKDIR $HOME/devel
+RUN mkdir src 
+WORKDIR $HOME/devel/src
 RUN --mount=type=ssh git clone git@gitlab.com:AIR-TEAM/air-phynt-genom3.git
+RUN --mount=type=ssh git clone git://git.openrobots.org/robots/telekyb3/rotorcraft-genom3.git
 
 # Add phynt build 
-WORKDIR $HOME/devel/air-phynt-genom3
+WORKDIR $HOME/devel/src/air-phynt-genom3
 RUN bash -c "./bootstrap.sh"
 RUN apt-get install -y asciidoctor
 
@@ -136,6 +141,16 @@ RUN mkdir build
 WORKDIR $HOME/devel/air-phynt-genom3/build
 RUN bash -c 'set -e; \
     . "$HOME/scripts/env.sh" && \
+    ../configure --prefix="$DEVEL_BASE" --with-templates=ros/client/c,ros/server,ros/client/ros && \
+    make install'
+
+# Add rotorcraft build (genom3-3.5 branch) 
+WORKDIR $HOME/devel/rotorcraft-genom3
+RUN git checkout git checkout tags/rotorcraft-genom3-3.5
+RUN mkdir build
+RUN $HOME/deve/rotorcraft-genom3/build
+RUN bash -c "set -e; \
+    . $HOME/scripts/env.sh" && \
     ../configure --prefix="$DEVEL_BASE" --with-templates=ros/client/c,ros/server,ros/client/ros && \
     make install'
 

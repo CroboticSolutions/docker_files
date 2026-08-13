@@ -1,8 +1,9 @@
 # DemoMotion Docker Compose
 
-Docker Compose setup for DemoMotion project with two ROS2 Jazzy services:
-- **arm_api2_ur**
-- **mediapipe**
+Docker Compose setup for DemoMotion project with three services:
+- **arm_api2_ur** (ROS2 Jazzy)
+- **mediapipe** (ROS2 Jazzy)
+- **oak_sr** (ROS2 Humble) -- [depthai-ros](../../luxonis) driver for an OAK-D SR camera
 
 ## Build Arguments
 
@@ -14,7 +15,7 @@ Docker Compose setup for DemoMotion project with two ROS2 Jazzy services:
 
 ## How to Use
 
-### 1. Build both images
+### 1. Build all images
 
 ```bash
 cd /home/toni/git/docker_files/composers/demomotion
@@ -23,7 +24,10 @@ DOCKER_BUILDKIT=1 ./docker-compose-up.sh build
 
 **Note:** DOCKER_BUILDKIT=1 is required because mediapipe uses SSH mount for private repositories.
 
-### 2. Start both containers in detached mode
+**Before first run of oak_sr:** run `../../luxonis/install_udev_rules_host.sh` on the
+host once, so the camera is accessible without root.
+
+### 2. Start all containers in detached mode
 
 ```bash
 ./docker-compose-up.sh up -d
@@ -41,12 +45,19 @@ docker exec -it ros2_armapi2_ur_cont bash
 docker exec -it ros2_mp_cont bash
 ```
 
+**oak_sr:**
+```bash
+docker exec -it ros2_oak_sr_cont bash
+```
+
 ### 4. Start only one service
 
 ```bash
 ./docker-compose-up.sh up -d arm_api2_ur
 # or
 ./docker-compose-up.sh up -d mediapipe
+# or
+./docker-compose-up.sh up -d oak_sr
 ```
 
 ### 5. Interactive mode for one service
@@ -55,6 +66,8 @@ docker exec -it ros2_mp_cont bash
 ./docker-compose-up.sh run --rm arm_api2_ur
 # or
 ./docker-compose-up.sh run --rm mediapipe
+# or
+./docker-compose-up.sh run --rm oak_sr
 ```
 
 ### 6. Stop all services
@@ -64,6 +77,31 @@ docker exec -it ros2_mp_cont bash
 ```
 
 ## Running Commands
+
+### OAK-D SR Camera
+
+**Launch the driver (inside `ros2_oak_sr_cont`):**
+```bash
+source /opt/ros/humble/setup.bash
+source /root/depthai_ws/install/setup.bash
+ros2 launch depthai_ros_driver sr_rgbd_pcl.launch.py rectify_rgb:=true
+```
+
+Publishes `/oak/right/image_rect`, `/oak/stereo/image_raw`, `/oak/right/camera_info`,
+`/oak/points`, `/oak/imu/data` -- see [../../luxonis/README.md](../../luxonis/README.md)
+for the full topic list and config details.
+
+**These topics are visible from `arm_api2_ur` and `mediapipe` without any extra
+setup** -- all three services use `network_mode: host` and the same
+`RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`, and none of them set `ROS_DOMAIN_ID` (so
+all three default to domain `0`). Verify from either container with:
+
+```bash
+ros2 topic echo /oak/stereo/camera_info
+```
+
+If you ever add `ROS_DOMAIN_ID` to one service, add the same value to the other two,
+or DDS discovery between them will break silently.
 
 ### SO_ARM100 Robotic Arm
 

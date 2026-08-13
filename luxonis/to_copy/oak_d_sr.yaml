@@ -1,0 +1,8 @@
+/oak:
+  ros__parameters:
+    camera:
+      i_pipeline_type: 'Depth'   # SR has no RGB camera -> forces Depth pipeline
+    right:
+      i_publish_topic: true       # publish raw right mono image
+    stereo:
+      i_right_rect_publish_topic: true  # publish rectified right image

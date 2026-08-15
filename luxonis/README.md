@@ -48,6 +48,44 @@ doesn't exist on SR (no RGB camera). `rectify_rgb:=true` loads an
 The driver auto-detects the OAK-D SR and aligns stereo depth to **CAM_C (right)**, so
 `/oak/right/image_rect` and `/oak/stereo/image_raw` share the same optical frame.
 
+### Other camera models: `camera.launch.py` with an explicit params file
+
+`sr_rgbd_pcl.launch.py` only exists for the SR (and PoE SR) variants -- most other
+models (e.g. **OAK-D Pro**) have no dedicated launch file, so `camera.launch.py` is
+the only entry point for them, not just an alternative:
+
+```bash
+ros2 launch depthai_ros_driver camera.launch.py params_file:=/root/depthai_ws/install/depthai_ros_driver/share/depthai_ros_driver/config/rgbd.yaml pointcloud.enable:=true
+```
+
+`camera_model` defaults to `OAK-D-PRO` in `camera.launch.py`, so it auto-detects
+Pro devices without needing `camera_model:=` set explicitly. `rgbd.yaml` sets
+`i_nn_type: none`, skipping the NN pipeline -- without that, the driver's default
+`camera.yaml` config loads a `mobilenet` NN pipeline that requires the
+`depthai_examples` package's `.blob` files, which aren't built in this workspace,
+and the node crashes with `ament_index_cpp::PackageNotFoundError`.
+`pointcloud.enable:=true` is required for `/oak/points` to publish at all -- it's
+off by default.
+
+## 5. Verify the camera is working (RViz2)
+
+With the driver running (step 4 above), in another shell in the same container:
+
+```bash
+source /opt/ros/humble/setup.bash
+rviz2
+```
+
+1. **Global Options -> Fixed Frame**: set to any `oak*` frame (e.g. `oak`).
+2. Add a **PointCloud2** display, **Topic** = `/oak/points`.
+3. On that display, set **Reliability Policy** = **Best Effort** (the RViz default,
+   `Reliable`, doesn't match the driver's QoS and silently shows nothing).
+
+If you see a real point cloud that updates as you move something in front of the
+camera, the camera + driver are working end-to-end. Don't rely on `ros2 topic echo
+/oak/points` alone to judge this -- it's easy to catch a transient bad frame there
+even when the stream is healthy overall.
+
 ## What was changed vs. the upstream default
 
 **`to_copy/oak_d_sr.yaml`** (copied over `depthai_ros_driver/config/oak_d_sr.yaml` at

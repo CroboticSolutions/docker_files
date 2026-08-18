@@ -30,6 +30,14 @@ Either standalone:
 or as the `oak_sr` service in [`../composers/demomotion/docker-compose.yml`](../composers/demomotion/docker-compose.yml)
 -- see that folder's README for the compose workflow.
 
+There's also a standalone `luxonis` service (same image, same run flags) in
+[`../composers/cameras/docker-compose.yml`](../composers/cameras/docker-compose.yml),
+used by the demomotion_gui setup wizard's camera-selection test hook (its
+"Test: start camera container" button calls `demomotion_gui/launch_server`'s
+`POST /camera/docker/launch`, which runs `docker compose up -d luxonis` from
+that file) -- see
+[`demomotion_gui/docs/CAMERA_DOCKER_TEST.md`](../../demomotion_gui/docs/CAMERA_DOCKER_TEST.md).
+
 ## 4. Launch the driver
 
 Inside the container:

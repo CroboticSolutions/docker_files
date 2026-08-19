@@ -38,7 +38,7 @@ services:
               capabilities: [gpu]
     volumes:
       - /dev:/dev
-      - /tmp/.x11-unix:/tmp/.x11-unix
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${SSH_AUTH_SOCK}:/ssh-agent
     environment:
       - SSH_AUTH_SOCK=/ssh-agent

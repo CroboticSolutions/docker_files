@@ -37,8 +37,8 @@ services:
     build:
       context: ../../luxonis
       dockerfile: Dockerfile
-    image: ros2_oak_sr:humble
-    container_name: ros2_oak_sr_test_cont
+    image: oak_img:humble
+    container_name: oak_cont
     stdin_open: true
     tty: true
     network_mode: host

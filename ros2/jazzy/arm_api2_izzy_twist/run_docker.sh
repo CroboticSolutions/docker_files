@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=arm_api2_cont_new_new
-IMAGE_NAME=arm_api2_img:jazzy_izzy_twist_new_new
+CONTAINER_NAME=arm_api2_cont_izzy_twist
+IMAGE_NAME=arm_api2_img:izzy_twist
 
 # Hook to the current SSH_AUTH_SOCK - since it changes
 # https://www.talkingquickly.co.uk/2021/01/tmux-ssh-agent-forwarding-vs-code/
@@ -13,7 +13,7 @@ docker run \
   --privileged \
   --gpus all \
   --volume /dev:/dev \
-  --volume /tmp/.x11-unix:/tmp/.x11-unix \
+  --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
   --volume ~/.ssh/ssh_auth_sock:/ssh-agent \
   --env SSH_AUTH_SOCK=/ssh-agent \
   --env DISPLAY=$DISPLAY \

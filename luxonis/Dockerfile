@@ -98,7 +98,8 @@ RUN . /opt/ros/${ROS2_DISTRO}/setup.sh && \
 RUN pip3 install catkin_pkg empy==3.3.4 lark
 
 RUN . /opt/ros/${ROS2_DISTRO}/setup.sh && \
-    colcon build --symlink-install \
+    MAKEFLAGS="-j2" colcon build --symlink-install \
+      --parallel-workers 1 \
       --packages-skip depthai_examples \
       --cmake-args -DCMAKE_BUILD_TYPE=Release
 

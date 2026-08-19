@@ -2,7 +2,7 @@
 
 One service per container in the split-out `arm_api2` + per-vendor driver
 set (see
-[`../../../DemoMotion/docker/README.md`](../../../DemoMotion/docker/README.md)
+[`../../vendor_split/README.md`](../../vendor_split/README.md)
 for the full design and networking contract). Unlike the old
 `composers/arm_api2` / `composers/cameras` smoke tests, this compose file is
 the **actual launch path** for the setup wizard's real Piper profiles --
@@ -12,14 +12,14 @@ host. See
 [`../../../demomotion_gui/launch_server/hardware_stacks.py`](../../../demomotion_gui/launch_server/hardware_stacks.py).
 
 Services:
-- **arm_api2** -- [`../../../DemoMotion/docker/arm_api2`](../../../DemoMotion/docker/arm_api2) (vendor-agnostic MoveIt interface, Jazzy)
-- **piper_driver** -- [`../../../DemoMotion/docker/piper_driver`](../../../DemoMotion/docker/piper_driver) (AgileX Piper CAN driver + Gazebo + MoveIt)
-- **ur_driver** -- [`../../../DemoMotion/docker/ur_driver`](../../../DemoMotion/docker/ur_driver) (Universal Robots driver + Gazebo + MoveIt) -- defined here, **not yet built/pushed**
-- **fanuc_driver** -- [`../../../DemoMotion/docker/fanuc_driver`](../../../DemoMotion/docker/fanuc_driver) (FANUC streaming driver + CRX cobot family + welding cell) -- defined here, **not yet built/pushed**
+- **arm_api2** -- [`../../vendor_split/arm_api2`](../../vendor_split/arm_api2) (vendor-agnostic MoveIt interface, Jazzy)
+- **piper_driver** -- [`../../vendor_split/piper_driver`](../../vendor_split/piper_driver) (AgileX Piper CAN driver + Gazebo + MoveIt)
+- **ur_driver** -- [`../../vendor_split/ur_driver`](../../vendor_split/ur_driver) (Universal Robots driver + Gazebo + MoveIt) -- defined here, **not yet built/pushed**
+- **fanuc_driver** -- [`../../vendor_split/fanuc_driver`](../../vendor_split/fanuc_driver) (FANUC streaming driver + CRX cobot family + welding cell) -- defined here, **not yet built/pushed**
 
 `abb_driver` has no service here -- its `Dockerfile` is a deliberate `exit 1`
 scaffold (no working ABB ROS 2 driver exists yet); see
-[`../../../DemoMotion/docker/abb_driver/README.md`](../../../DemoMotion/docker/abb_driver/README.md).
+[`../../vendor_split/abb_driver/README.md`](../../vendor_split/abb_driver/README.md).
 
 ## Build
 

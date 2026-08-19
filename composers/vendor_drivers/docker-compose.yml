@@ -3,13 +3,13 @@ version: '3.8'
 # Per-vendor arm_api2 + driver containers, split out of the combined
 # arm_api2_ur_robot/arm_api2_izzy_twist dev containers so arm_api2 (vendor-
 # agnostic MoveIt interface) and each vendor's driver/MoveIt/Gazebo stack can
-# be started independently. See ../../DemoMotion/docker/README.md for the
+# be started independently. See ../../vendor_split/README.md for the
 # full networking contract (host network + matching RMW_IMPLEMENTATION +
 # ROS_DOMAIN_ID across all of these, plus the GUI's rosbridge container).
 #
 # abb_driver is intentionally NOT a service here: its Dockerfile is a
 # scaffold with a deliberate `exit 1` (no working ABB ROS 2 driver exists
-# yet) — see ../../DemoMotion/docker/abb_driver/README.md.
+# yet) — see ../../vendor_split/abb_driver/README.md.
 #
 #   docker compose -f docker-compose.yml build arm_api2 piper_driver
 #   docker compose -f docker-compose.yml up -d arm_api2 piper_driver
@@ -17,7 +17,7 @@ version: '3.8'
 services:
   arm_api2:
     build:
-      context: ../../../DemoMotion/docker/arm_api2
+      context: ../../vendor_split/arm_api2
       dockerfile: Dockerfile
     image: arm_api2_img:jazzy
     container_name: arm_api2_cont_jazzy
@@ -30,7 +30,7 @@ services:
 
   piper_driver:
     build:
-      context: ../../../DemoMotion/docker/piper_driver
+      context: ../../vendor_split/piper_driver
       dockerfile: Dockerfile
     image: piper_driver_img:jazzy
     container_name: piper_driver_cont
@@ -48,7 +48,7 @@ services:
 
   ur_driver:
     build:
-      context: ../../../DemoMotion/docker/ur_driver
+      context: ../../vendor_split/ur_driver
       dockerfile: Dockerfile
     image: ur_driver_img:jazzy
     container_name: ur_driver_cont
@@ -64,7 +64,7 @@ services:
 
   fanuc_driver:
     build:
-      context: ../../../DemoMotion/docker/fanuc_driver
+      context: ../../vendor_split/fanuc_driver
       dockerfile: Dockerfile
     image: fanuc_driver_img:jazzy
     container_name: fanuc_driver_cont

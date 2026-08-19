@@ -73,8 +73,8 @@ rs-enumerate-devices
 # Launch the ROS2 camera node (topics, depth/RGB streams, point cloud, etc.)
 ros2 launch realsense2_camera rs_launch.py
 
-# With pointcloud + depth-color alignment enabled
-ros2 launch realsense2_camera rs_launch.py enable_pointcloud:=true align_depth.enable:=true
+# With pointcloud 
+ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true
 ```
 
 ## System Requirements

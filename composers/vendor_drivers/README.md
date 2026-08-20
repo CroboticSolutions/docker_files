@@ -14,6 +14,7 @@ host. See
 Services:
 - **arm_api2** -- [`../../vendor_split/arm_api2`](../../vendor_split/arm_api2) (vendor-agnostic MoveIt interface, Jazzy)
 - **piper_driver** -- [`../../vendor_split/piper_driver`](../../vendor_split/piper_driver) (AgileX Piper CAN driver + Gazebo + MoveIt)
+- **realsense** -- [`../../realsense`](../../realsense) (Intel RealSense D400 series; used by the PiPER + RealSense D435 wizard profile so the camera launch runs in-container like `piper_driver`/`arm_api2`, instead of needing ROS sourced on the host)
 - **ur_driver** -- [`../../vendor_split/ur_driver`](../../vendor_split/ur_driver) (Universal Robots driver + Gazebo + MoveIt) -- defined here, **not yet built/pushed**
 - **fanuc_driver** -- [`../../vendor_split/fanuc_driver`](../../vendor_split/fanuc_driver) (FANUC streaming driver + CRX cobot family + welding cell) -- defined here, **not yet built/pushed**
 
@@ -24,7 +25,7 @@ scaffold (no working ABB ROS 2 driver exists yet); see
 ## Build
 
 ```bash
-docker compose -f docker-compose.yml build arm_api2 piper_driver
+docker compose -f docker-compose.yml build arm_api2 piper_driver realsense
 # ur_driver / fanuc_driver build fine too, but are large (full ROS 2 desktop +
 # Gazebo + MoveIt) -- check free disk before building them.
 ```
@@ -33,11 +34,12 @@ docker compose -f docker-compose.yml build arm_api2 piper_driver
 
 `hardware_stacks.py` starts these automatically (`docker compose up -d
 <service>`) the first time a profile that needs them is launched from the
-wizard, pulling `croboticsolutions/<name>:jazzy` from Docker Hub first if the
-local image is missing. To start one manually:
+wizard, pulling the matching image from Docker Hub first (see table below) if
+the local image is missing, and only falling back to a local `docker compose
+build` if that pull fails. To start one manually:
 
 ```bash
-docker compose -f docker-compose.yml up -d arm_api2 piper_driver
+docker compose -f docker-compose.yml up -d arm_api2 piper_driver realsense
 ```
 
 Containers are meant to stay up (idle `bash`) between wizard launches --
@@ -51,7 +53,16 @@ containers themselves.
 |---|---|
 | `arm_api2` | `croboticsolutions/arm_api2:jazzy` |
 | `piper_driver` | `croboticsolutions/piper_driver:jazzy` |
+| `realsense` | `croboticsolutions/realsense_img:jazzy` |
 
 Note: `croboticsolutions/arm_api2:humble` is a **different, older** image
 (the combined dev-container-style build) -- this split, Jazzy-only
 `arm_api2` is a separate tag, not a replacement for it.
+
+`croboticsolutions/oak_img:humble` is also published, but is **not** wired
+into `hardware_stacks.py`'s `CONTAINER_HUB_IMAGE`/`CONTAINER_COMPOSE_SERVICE`
+yet -- the OAK-D Pro W wizard profile's camera step launches
+`depthai_ros_driver_v3`'s `rgbd_pro_w_pcl.launch.py`, a different
+package/launch file than the OAK-D SR-only `depthai_ros_driver` workspace
+`../../luxonis` builds, so it needs its own verified compose service before
+it can be containerized the same way.

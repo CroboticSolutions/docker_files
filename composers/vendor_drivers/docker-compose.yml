@@ -11,8 +11,8 @@ version: '3.8'
 # scaffold with a deliberate `exit 1` (no working ABB ROS 2 driver exists
 # yet) — see ../../vendor_split/abb_driver/README.md.
 #
-#   docker compose -f docker-compose.yml build arm_api2 piper_driver
-#   docker compose -f docker-compose.yml up -d arm_api2 piper_driver
+#   docker compose -f docker-compose.yml build arm_api2 piper_driver realsense
+#   docker compose -f docker-compose.yml up -d arm_api2 piper_driver realsense
 
 services:
   arm_api2:
@@ -34,6 +34,24 @@ services:
       dockerfile: Dockerfile
     image: piper_driver_img:jazzy
     container_name: piper_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  realsense:
+    build:
+      context: ../../realsense
+      dockerfile: Dockerfile
+    image: realsense_img:jazzy
+    container_name: realsense_cont
     stdin_open: true
     tty: true
     network_mode: host

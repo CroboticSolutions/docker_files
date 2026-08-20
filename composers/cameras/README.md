@@ -3,12 +3,20 @@
 Single Compose file with one service per camera driver. Originally used to
 smoke-test that the demomotion_gui setup wizard could start a camera
 container via a `POST /camera/docker/*` test hook; that hook (and its
-buttons in the wizard) has since been removed -- the wizard's real camera
-launches still run `ros2 launch realsense2_camera` / `depthai_ros_driver_v3`
-directly wherever `launch_server` runs, unchanged. This compose file is now
+buttons in the wizard) has since been removed. This compose file itself is
 standalone (not called by `launch_server`) -- useful for manually building/
-running a camera container, or as a starting point if camera launches get
-containerized later, similar to [`../vendor_drivers`](../vendor_drivers).
+running a camera container in isolation.
+
+**realsense is now also containerized for real wizard launches** -- see
+[`../vendor_drivers`](../vendor_drivers), whose `realsense` service is the
+one `hardware_stacks.py`/`launch_server` actually starts for the PiPER +
+RealSense D435 profile (same image/build context as the `realsense` service
+here, just wired into the wizard's `docker exec` launch path). The
+`luxonis` service below is not yet wired the same way -- the wizard's OAK-D
+Pro W profile still runs `depthai_ros_driver_v3`'s `rgbd_pro_w_pcl.launch.py`
+directly wherever `launch_server` runs, since that's a different
+package/launch file than the OAK-D SR-only `depthai_ros_driver` workspace
+`../../luxonis` builds.
 
 Services:
 - **realsense** -- [../../realsense](../../realsense) (Intel RealSense D435/D400 series)

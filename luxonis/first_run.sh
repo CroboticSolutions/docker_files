@@ -1,1 +1,0 @@
-docker run --privileged -v /dev/bus/usb:/dev/bus/usb --device-cgroup-rule='c 189:* rmw' -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --network host --rm -i -t depthai_img python3 /depthai/depthai_demo.py

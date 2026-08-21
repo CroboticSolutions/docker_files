@@ -1,9 +1,8 @@
-version: '3.8'
 
 services:
   genom_gz_classic:
-    image: genom_img:gz_old
-    container_name: genom_gz_classic_cont_NEW
+    image: genom_img:gz_classic_react
+    container_name: genom_gz_classic_react_cont
     privileged: true
     network_mode: host
     environment:
@@ -28,7 +27,7 @@ services:
 
   ros_slam_noetic:
     image: ros_slam_img:noetic
-    container_name: ros_slam_noetic_cont_test
+    container_name: ros_slam_noetic_cont
     privileged: true
     network_mode: host
     environment:

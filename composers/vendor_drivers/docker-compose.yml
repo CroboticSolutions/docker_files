@@ -1,0 +1,68 @@
+version: '3.8'
+
+# Per-vendor arm_api2 + driver containers, split out of the combined
+# arm_api2_ur_robot/arm_api2_izzy_twist dev containers so arm_api2 (vendor-
+# agnostic MoveIt interface) and each vendor's driver/MoveIt/Gazebo stack can
+# be started independently. See ../../vendor_split/README.md for the
+# full networking contract (host network + matching RMW_IMPLEMENTATION +
+# ROS_DOMAIN_ID across all of these, plus the GUI's rosbridge container).
+#
+# abb_driver is intentionally NOT a service here: its Dockerfile is a
+# scaffold with a deliberate `exit 1` (no working ABB ROS 2 driver exists
+# yet) — see ../../vendor_split/abb_driver/README.md.
+#
+#   docker compose -f docker-compose.yml build piper_driver
+#   docker compose -f docker-compose.yml up -d piper_driver
+#
+# vendor_split/arm_api2 is gone — use composers/demomotion arm_api2_humble.
+
+services:
+  piper_driver:
+    build:
+      context: ../../vendor_split/piper_driver
+      dockerfile: Dockerfile
+    image: piper_driver_img:jazzy
+    container_name: piper_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  ur_driver:
+    build:
+      context: ../../vendor_split/ur_driver
+      dockerfile: Dockerfile
+    image: ur_driver_img:jazzy
+    container_name: ur_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  fanuc_driver:
+    build:
+      context: ../../vendor_split/fanuc_driver
+      dockerfile: Dockerfile
+    image: fanuc_driver_img:jazzy
+    container_name: fanuc_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash

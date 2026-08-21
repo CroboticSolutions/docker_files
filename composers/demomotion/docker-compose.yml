@@ -1,51 +1,127 @@
-version: '3.8'
+# DemoMotion stack. Five Hub images are pulled, not built.
+# ur_driver / fanuc_driver are not on Docker Hub — name them explicitly
+# or `pull` / `up -d` with no args will fail on those tags.
+#
+#   ./docker-compose-up.sh pull arm_api2_humble perception realsense oak piper_driver
+#   ./docker-compose-up.sh up -d arm_api2_humble perception realsense oak piper_driver
+
+x-dds-env: &dds-env
+  RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+  ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+  TERM: xterm-256color
 
 services:
-  arm_api2_ur:
-    build:
-      context: ../../ros2/jazzy/arm_api2_ur_robot
-      dockerfile: Dockerfile
-      args:
-        INSTALL_GAZEBO: "yes"
-        LEROBOT_PY: "yes"
-        LEROBOT_ROS: "yes"
-        USE_UR_ROBOT: "yes"
-      ssh:
-        - default
-    image: ros2_armapi2_ur:jazzy
-    container_name: ros2_armapi2_ur_cont
+  arm_api2_humble:
+    image: croboticsolutions/arm_api2:humble-selftest
+    pull_policy: missing
+    container_name: arm_api2_cont_humble
     stdin_open: true
     tty: true
     network_mode: host
     privileged: true
     environment:
-      - DISPLAY=${DISPLAY}
-      - SSH_AUTH_SOCK=/ssh-agent
-      - TERM=xterm-256color
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+      SSH_AUTH_SOCK: /ssh-agent
     volumes:
       - /dev:/dev
-      - /tmp/.x11-unix:/tmp/.x11-unix
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
     command: /bin/bash
 
-  mediapipe:
-    build:
-      context: ../../ros2/jazzy/mediapipe
-      dockerfile: Dockerfile
-      ssh:
-        - default
-    image: ros2_mp:jazzy
-    container_name: ros2_mp_cont
+  perception:
+    image: croboticsolutions/perception:jazzy
+    pull_policy: missing
+    container_name: arm-api2-perception
+    stdin_open: true
+    tty: true
+    network_mode: host
+    ipc: host
+    gpus: all
+    environment:
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+      PYNPUT_BACKEND: ${PYNPUT_BACKEND:-dummy}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    command: /bin/bash
+
+  realsense:
+    image: croboticsolutions/realsense_img:jazzy
+    pull_policy: missing
+    container_name: realsense_cont
     stdin_open: true
     tty: true
     network_mode: host
     privileged: true
     environment:
-      - DISPLAY=${DISPLAY}
-      - SSH_AUTH_SOCK=/ssh-agent
-      - TERM=xterm-256color
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
     volumes:
       - /dev:/dev
-      - /tmp/.x11-unix:/tmp/.x11-unix
-      - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  oak:
+    image: croboticsolutions/oak_img:humble
+    pull_policy: missing
+    container_name: oak_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  piper_driver:
+    image: croboticsolutions/piper_driver:jazzy
+    pull_policy: missing
+    container_name: piper_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  ur_driver:
+    build:
+      context: ../../vendor_split/ur_driver
+      dockerfile: Dockerfile
+    image: ur_driver_img:jazzy
+    container_name: ur_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: /bin/bash
+
+  fanuc_driver:
+    build:
+      context: ../../vendor_split/fanuc_driver
+      dockerfile: Dockerfile
+    image: fanuc_driver_img:jazzy
+    container_name: fanuc_driver_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      <<: *dds-env
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
     command: /bin/bash

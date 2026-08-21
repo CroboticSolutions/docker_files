@@ -1,188 +1,159 @@
 # DemoMotion Docker Compose
 
-Docker Compose setup for DemoMotion project with two ROS2 Jazzy services:
-- **arm_api2_ur**
-- **mediapipe**
+Host-networked stack. The five Hub images are **pulled**, not built.
+MediaPipe lives inside **perception** (`mp_wrapper_ros`).
 
-## Build Arguments
+| Service | Image | Distro | Container | Role |
+|---|---|---|---|---|
+| `arm_api2_humble` | `croboticsolutions/arm_api2:humble-selftest` | Humble | `arm_api2_cont_humble` | UR + MoveIt + `arm_api2` |
+| `perception` | `croboticsolutions/perception:jazzy` | Jazzy GPU | `arm-api2-perception` | MediaPipe / WiLoR, SAM, hand-eye |
+| `realsense` | `croboticsolutions/realsense_img:jazzy` | Jazzy | `realsense_cont` | Intel RealSense D435 / D400 |
+| `oak` | `croboticsolutions/oak_img:humble` | Humble | `oak_cont` | Luxonis OAK-D (depthai-ros) |
+| `piper_driver` | `croboticsolutions/piper_driver:jazzy` | Jazzy | `piper_driver_cont` | AgileX Piper driver + MoveIt |
 
-**arm_api2_ur** service is built with all build arguments set to "yes":
-- `INSTALL_GAZEBO="yes"` - Installs Gazebo Ionic simulator
-- `LEROBOT_PY="yes"` - Installs LeRobot Python libraries
-- `LEROBOT_ROS="yes"` - Clones SO_ARM100 workspace
-- `USE_UR_ROBOT="yes"` - Clones Universal Robots ROS2 driver and description packages
+Local-only (not on Docker Hub — skip these unless you need them):
 
-## How to Use
+| Service | Image | Distro |
+|---|---|---|
+| `ur_driver` | build [`../../vendor_split/ur_driver`](../../vendor_split/ur_driver) | Jazzy |
+| `fanuc_driver` | build [`../../vendor_split/fanuc_driver`](../../vendor_split/fanuc_driver) | Jazzy |
 
-### 1. Build both images
+`abb_driver` is omitted (`exit 1` scaffold). There is no Jazzy
+`vendor_split/arm_api2` — the interface is `arm_api2_humble` only.
 
-```bash
-cd /home/toni/git/docker_files/composers/demomotion
-DOCKER_BUILDKIT=1 ./docker-compose-up.sh build
-```
+Do **not** run `./docker-compose-up.sh pull` or `up -d` with no service names.
+Compose then tries `ur_driver_img` / `fanuc_driver_img` on Docker Hub and
+fails with `pull access denied`.
 
-**Note:** DOCKER_BUILDKIT=1 is required because mediapipe uses SSH mount for private repositories.
+## Quick start (all Hub containers)
 
-### 2. Start both containers in detached mode
-
-```bash
-./docker-compose-up.sh up -d
-```
-
-### 3. Attach to the container you want
-
-**arm_api2_ur:**
-```bash
-docker exec -it ros2_armapi2_ur_cont bash
-```
-
-**mediapipe:**
-```bash
-docker exec -it ros2_mp_cont bash
-```
-
-### 4. Start only one service
+From this directory:
 
 ```bash
-./docker-compose-up.sh up -d arm_api2_ur
-# or
-./docker-compose-up.sh up -d mediapipe
+./docker-compose-up.sh pull arm_api2_humble perception realsense oak piper_driver
+./docker-compose-up.sh up -d arm_api2_humble perception realsense oak piper_driver
 ```
 
-### 5. Interactive mode for one service
+That pulls (if missing) and starts all five: Humble `arm_api2`, perception,
+RealSense, OAK, Piper. Containers stay up with idle `bash`. Launch ROS
+nodes yourself via `docker exec` (examples below).
 
-```bash
-./docker-compose-up.sh run --rm arm_api2_ur
-# or
-./docker-compose-up.sh run --rm mediapipe
-```
+`pull_policy: missing` — `up` will not re-download a tag that is already
+local. Re-run the `pull` line to refresh from Hub.
 
-### 6. Stop all services
+Stop:
 
 ```bash
 ./docker-compose-up.sh down
 ```
 
-## Running Commands
+## Prerequisites
 
-### SO_ARM100 Robotic Arm
+- Docker Compose v2
+- NVIDIA Container Toolkit (`perception` uses `--gpus all`)
+- Host udev, once, if you plug in a camera:
+  - OAK: `../../luxonis/install_udev_rules_host.sh`
+  - RealSense: `curl -fsSL https://raw.githubusercontent.com/IntelRealSense/librealsense/master/scripts/setup_udev_rules.sh | sudo bash`
 
-**Launch with mock components:**
+Hub repos under `croboticsolutions/` are public. Pull does not need GitHub SSH.
+
+## Networking
+
+Every service uses `network_mode: host`, `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`,
+and `ROS_DOMAIN_ID` default `0`. Override for the whole stack:
+
 ```bash
-ros2 launch so_arm100_moveit_config demo.launch.py hardware_type:=mock_components
+ROS_DOMAIN_ID=42 ./docker-compose-up.sh up -d arm_api2_humble perception realsense oak piper_driver
 ```
 
-**Launch with real hardware:**
+If you set the domain on one service, set the same value on every peer
+(including the GUI/rosbridge container), or DDS discovery fails silently.
+
+## Attach
+
 ```bash
-ros2 launch so_arm100_moveit_config demo.launch.py hardware_type:=real usb_port:=/dev/ttyACM0
+docker exec -it arm_api2_cont_humble bash
+docker exec -it arm-api2-perception bash
+docker exec -it realsense_cont bash
+docker exec -it oak_cont bash
+docker exec -it piper_driver_cont bash
 ```
 
-**Launch arm_api2 node for SO_ARM100:**
+## Launch examples
+
+Containers do not start ROS nodes by themselves.
+
+### Cameras
+
+OAK-D SR (inside `oak_cont`):
+
 ```bash
-ros2 launch arm_api2 moveit2_iface.launch.py robot_name:=so_arm100
+source /opt/ros/humble/setup.bash
+source /root/depthai_ws/install/setup.bash
+ros2 launch depthai_ros_driver sr_rgbd_pcl.launch.py rectify_rgb:=true
 ```
 
-### MediaPipe ROS Wrapper
+RealSense (inside `realsense_cont`):
 
-**Launch mp_ros_wrapper node:**
 ```bash
-ros2 launch mp_wrapper_ros mp_ros_wrapper.launch.py
+ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true
 ```
 
-**Launch usb_cam node (edit params_1.yaml according to your camera settings):**
+OAK and RealSense can both be running as idle containers; start the driver
+only in the camera you are using.
+
+### Perception (inside `arm-api2-perception`)
+
+Camera topics must already be publishing.
+
 ```bash
-ros2 run usb_cam usb_cam_node_exe --ros-args --params-file /root/hpe_ws/src/usb_cam/config/params_1.yaml
+ros2 launch mp_wrapper_ros hamer_mp_hamer_oak_d_pro_w.launch.py
+ros2 launch sam_ros2 sam_interactive.launch.py robot:=piper
+ros2 launch hand_eye_calibration calibration.launch.py
 ```
 
-### UR Robot
+### Humble arm (`arm_api2_cont_humble`)
 
-**Launch arm_api2 node for UR robot:**
-```bash
-ros2 launch arm_api2 moveit2_iface.launch.py robot_name:=ur use_sim_time:=true
-```
-
-**Switch arm_api2 to servo control:**
-```bash
-ros2 service call /arm/change_state arm_api2_msgs/srv/ChangeState "{state: SERVO_CTL}"
-```
-
-**Launch UR robot driver:**
-```bash
-ros2 launch ur_robot_driver ur_control.launch.py ur_type:=ur5e robot_ip:=127.0.0.1 use_mock_hardware:=true launch_rviz:=false
-```
-
-**Launch UR robot in RViz:**
-```bash
-ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur5e launch_rviz:=true
-```
-
-**Launch UR robot in Gazebo:**
 ```bash
 ros2 launch ur_simulation_gz ur_sim_moveit.launch.py ur_type:=ur5e
+ros2 launch arm_api2 moveit2_iface.launch.py \
+  robot_name:=ur use_sim_time:=true mode:=advanced
+ros2 run arm_api2 arm_api2_selftest.py
 ```
 
-### Controller Switching
+The Hub `humble-selftest` image may be built without Gazebo. If
+`ur_simulation_gz` is missing, use a real UR or an already-running sim.
 
-**For RViz planning mode:**
+### Piper (`piper_driver_cont`, then Humble `arm_api2`)
 
-1. Switch controller:
+Piper uses workspace root (no `robot_ns`). Bring the driver up first, then:
+
 ```bash
-ros2 service call /controller_manager/switch_controller controller_manager_msgs/srv/SwitchController "{activate_controllers: ['scaled_joint_trajectory_controller'], deactivate_controllers: ['joint_trajectory_controller'], strictness: 1, activate_asap: true}"
+ros2 launch arm_api2 moveit2_iface.launch.py robot_name:=piper
 ```
 
-2. Switch arm_api2 to trajectory mode:
+Details: [`../../vendor_split/README.md`](../../vendor_split/README.md).
+
+Verify DDS from any container:
+
 ```bash
-ros2 service call /arm/change_state arm_api2_msgs/srv/ChangeState "{state: 'CART_TRAJ_CTL'}"
+ros2 topic list
 ```
 
-**For Servo/Finger control mode:**
+## UR / FANUC (local build only)
 
-1. Switch controller:
+Not on Docker Hub. Only if you need them:
+
 ```bash
-ros2 service call /controller_manager/switch_controller controller_manager_msgs/srv/SwitchController "{activate_controllers: ['joint_trajectory_controller'], deactivate_controllers: ['scaled_joint_trajectory_controller'], strictness: 1, activate_asap: true}"
+./docker-compose-up.sh build ur_driver
+./docker-compose-up.sh up -d ur_driver
+
+./docker-compose-up.sh build fanuc_driver
+./docker-compose-up.sh up -d fanuc_driver
 ```
 
-2. Enable non-zero velocities:
+Then, matching namespaces:
+
 ```bash
-ros2 param set /joint_trajectory_controller allow_nonzero_velocity_at_trajectory_end true
+ros2 launch arm_api2 moveit2_iface.launch.py robot_name:=ur robot_ns:=ur1
 ```
-
-3. Switch arm_api2 to servo mode:
-```bash
-ros2 service call /arm/change_state arm_api2_msgs/srv/ChangeState "{state: 'SERVO_CTL'}"
-```
-
-### Control Mode Toggling
-
-**Topic:** `/arm/toggle_control_mode` (Bool)
-
-**Toggle command:**
-```bash
-ros2 topic pub --once /arm/toggle_control_mode std_msgs/msg/Bool '{data: true}'
-```
-
-**Note:** You can also use thumb up gesture to switch between orientation mode and position mode.
-
-**Visual Joystick Usage:**
-
-1. Start visual_joystick:
-```bash
-python3 visual_joystick.py
-```
-
-2. Test POSITION mode (default):
-   - Move your finger → robot translates
-
-3. Switch to ORIENTATION mode:
-```bash
-ros2 topic pub --once /arm/toggle_control_mode std_msgs/msg/Bool '{data: true}'
-```
-
-4. Test ORIENTATION mode:
-   - Move your finger → robot rotates end effector
-
-5. Return to POSITION mode:
-```bash
-ros2 topic pub --once /arm/toggle_control_mode std_msgs/msg/Bool '{data: true}'
-```
-

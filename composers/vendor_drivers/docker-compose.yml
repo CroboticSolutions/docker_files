@@ -95,3 +95,21 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: /bin/bash
+
+  # No `build:` -- unlike the others, this isn't built from a Dockerfile in
+  # this repo, it's pulled straight from Docker Hub (croboticsolutions/
+  # perception:jazzy) and re-tagged locally (see launch_server/hardware_stacks.py
+  # CONTAINER_HUB_IMAGE). `runtime: nvidia` needs the host's Docker daemon to
+  # have the nvidia container runtime configured (`docker info` lists
+  # `nvidia` under Runtimes) -- the image is CUDA 12.8-based and the WiLoR/
+  # mediapipe/SAM models it runs are impractically slow on CPU.
+  perception:
+    image: perception_img:jazzy
+    container_name: perception_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    runtime: nvidia
+    environment:
+      - TERM=xterm-256color
+    command: /bin/bash

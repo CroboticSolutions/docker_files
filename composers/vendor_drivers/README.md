@@ -15,6 +15,14 @@ Services:
 - **arm_api2** -- [`../../vendor_split/arm_api2`](../../vendor_split/arm_api2) (vendor-agnostic MoveIt interface, Jazzy)
 - **piper_driver** -- [`../../vendor_split/piper_driver`](../../vendor_split/piper_driver) (AgileX Piper CAN driver + Gazebo + MoveIt)
 - **realsense** -- [`../../realsense`](../../realsense) (Intel RealSense D400 series; used by the PiPER + RealSense D435 wizard profile so the camera launch runs in-container like `piper_driver`/`arm_api2`, instead of needing ROS sourced on the host)
+- **perception** -- `croboticsolutions/perception:jazzy` on Docker Hub, no local Dockerfile (see Build below) -- HaMeR/WiLoR hand-pose + SAM for the WELDING application's `mp_wrapper_ros` nodes and the `/teleop/start-hand-servo` endpoint. `docker exec`'d into from
+  [`../../../demomotion_gui/launch_server/welding_stack.py`](../../../demomotion_gui/launch_server/welding_stack.py)
+  and `main.py`, not `hardware_stacks.py`'s wizard profiles -- see
+  `docs_demo/perception_container_setup.md` in `DemoMotion` for the full
+  writeup (a bug in the published image needing a live per-container patch
+  until it's fixed upstream: missing `libgles2`, missing `arm_api2_msgs`,
+  `mp_wrapper_ros`'s unconditional `pynput` import needing a virtual
+  display).
 - **ur_driver** -- [`../../vendor_split/ur_driver`](../../vendor_split/ur_driver) (Universal Robots driver + Gazebo + MoveIt) -- defined here, **not yet built/pushed**
 - **fanuc_driver** -- [`../../vendor_split/fanuc_driver`](../../vendor_split/fanuc_driver) (FANUC streaming driver + CRX cobot family + welding cell) -- defined here, **not yet built/pushed**
 
@@ -29,6 +37,14 @@ docker compose -f docker-compose.yml build arm_api2 piper_driver realsense
 # ur_driver / fanuc_driver build fine too, but are large (full ROS 2 desktop +
 # Gazebo + MoveIt) -- check free disk before building them.
 ```
+
+`perception` has no `build:` section -- it's pulled straight from Docker Hub
+and re-tagged locally, same pull+tag fallback the others use if their local
+image is missing (see `_pull_and_tag_docker_image` in `main.py`), just
+without a local source to fall back to *building* from if the pull ever
+fails. It also needs `runtime: nvidia` (the host's Docker daemon needs the
+nvidia container runtime configured, e.g. via `nvidia-container-toolkit`) --
+its CUDA-based hand-pose models are impractically slow on CPU.
 
 ## Run
 
@@ -54,6 +70,7 @@ containers themselves.
 | `arm_api2` | `croboticsolutions/arm_api2:jazzy` |
 | `piper_driver` | `croboticsolutions/piper_driver:jazzy` |
 | `realsense` | `croboticsolutions/realsense_img:jazzy` |
+| `perception` | `croboticsolutions/perception:jazzy` |
 
 Note: `croboticsolutions/arm_api2:humble` is a **different, older** image
 (the combined dev-container-style build) -- this split, Jazzy-only

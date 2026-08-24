@@ -81,6 +81,51 @@ Frontend + wizard: `http://localhost:8080`. Bridge websocket:
 build-time defaults, so no frontend rebuild is needed unless those were
 overridden.
 
+## Restarting safely
+
+`entrypoint.sh` starts 4 background processes (the `ros2_dash_gui` bridge,
+`launch_server`'s uvicorn, and the two `aiortc_webrtc_ros` servers) and does
+`wait -n` on all of them: **the instant any one of the four exits, for any
+reason, the entrypoint tears the other three down and the container itself
+exits.** This is deliberate (fail-fast instead of limping along with one
+dead component), but it means:
+
+- **Never `docker exec gui_orchestrator kill <pid>` on one of those four
+  child processes** (e.g. to bounce just the bridge after a `bridge.py`
+  code change) -- that takes the *whole* container down, not just that one
+  process. If you ran it with `--rm` (see `## Run` above), the container is
+  then gone, not just stopped, and you'll need to re-`docker run` it.
+- To restart everything cleanly, use `docker restart gui_orchestrator` (or
+  `docker stop` + re-`docker run` if you used `--rm`) -- that sends `SIGTERM`
+  to the entrypoint script itself, which runs its own `cleanup()` trap
+  correctly instead of racing `wait -n`.
+- Prefer running with `--restart unless-stopped` (no `--rm`) over `-it --rm`
+  for anything other than a quick foreground debug session -- `--rm` means
+  any single child dying (a crash, an OOM, an accidental `kill`) silently
+  deletes the container instead of leaving something to `docker start`/
+  `docker logs` after the fact.
+- A container restart **does not pick up source changes** -- both
+  `demomotion_gui` (frontend + `launch_server`) and `ros2_dash_gui` are
+  `COPY`'d/`git clone`'d at *build* time, not bind-mounted. You need a
+  `docker build` first. Note also that a plain rebuild can reuse Docker's
+  cached layer for the `ros2_dash_gui` `git clone` step even after new
+  commits land on its branch, since the `RUN git clone ...` command text
+  itself hasn't changed -- if you only changed something in that repo (not
+  this Dockerfile or `demomotion_gui`), rebuild with `--no-cache` or you'll
+  silently get the old bridge code.
+- `launch_server`'s hardware-stack bookkeeping (`/status`'s
+  `hardware_running`/`hardware_stack_id`) lives in this process's own
+  memory. Restarting this container does **not** stop the real robot
+  processes in the sibling driver containers (they keep running fine), but
+  it does make `launch_server` forget it ever started them. Don't click
+  "Launch Hardware" in the wizard in that state -- since it thinks nothing
+  is running, it will launch a second copy on top of the first instead of
+  replacing it, leaving two sets of driver processes (e.g. duplicate
+  `piper_read_slave_joint`/`piper_ctrl_single_node`) racing each other over
+  the same physical hardware. Do one manual `/hardware/stop` +
+  `/hardware/launch` cycle (or the wizard's stop/relaunch controls) to
+  resync state before trusting the UI again.
+
 ## Env vars
 
 | Var | Default | What |

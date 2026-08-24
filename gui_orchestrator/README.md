@@ -50,7 +50,7 @@ DOCKER_BUILDKIT=1 docker build --ssh default \
 ## Run
 
 ```bash
-docker run -it --rm \
+docker run -d --restart unless-stopped \
   --name gui_orchestrator \
   --network host \
   -v /var/run/docker.sock:/var/run/docker.sock \
@@ -58,6 +58,9 @@ docker run -it --rm \
   -e VENDOR_DRIVERS_COMPOSE_FILE=/home/martin/Crobotics/docker_files/composers/vendor_drivers/docker-compose.yml \
   gui_orchestrator
 ```
+
+See "Restarting safely" below for why `-d --restart unless-stopped` is
+preferred over `-it --rm` outside a quick foreground debug session.
 
 - `--network host` -- matches every other container in this project (see
   `docker_files/composers/demomotion/docker-compose.yml`); ROS 2 DDS

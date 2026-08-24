@@ -11,8 +11,8 @@ IMAGE_NAME=gui_orchestrator:latest
 DOCKER_FILES_DIR=/home/martin/Crobotics/docker_files
 
 docker run \
-  -it \
-  --rm \
+  -d \
+  --restart unless-stopped \
   --network host \
   --name $CONTAINER_NAME \
   -v /var/run/docker.sock:/var/run/docker.sock \

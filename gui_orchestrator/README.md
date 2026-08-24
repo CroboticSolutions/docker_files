@@ -81,6 +81,15 @@ Frontend + wizard: `http://localhost:8080`. Bridge websocket:
 build-time defaults, so no frontend rebuild is needed unless those were
 overridden.
 
+Every real-Piper hardware profile also ends with a `set_cartesian_default`
+step (`hardware_stacks.py`'s `_cartesian_default_step`) a few seconds after
+`arm_api2` comes up: it calls `/arm/change_state` with `CART_TRAJ_CTL`, the
+same service the GUI's own StateControl "Cartesian Control" button calls --
+so the arm lands in Cartesian mode automatically instead of sitting in
+`IDLE` until someone clicks the button. `ARM_API2_CARTESIAN_DEFAULT_EXTRA_DELAY_S`
+(default `8`) controls how long after `arm_api2`'s own launch delay it waits
+before making that call.
+
 ## Restarting safely
 
 `entrypoint.sh` starts 4 background processes (the `ros2_dash_gui` bridge,
@@ -117,14 +126,20 @@ dead component), but it means:
   `hardware_running`/`hardware_stack_id`) lives in this process's own
   memory. Restarting this container does **not** stop the real robot
   processes in the sibling driver containers (they keep running fine), but
-  it does make `launch_server` forget it ever started them. Don't click
-  "Launch Hardware" in the wizard in that state -- since it thinks nothing
-  is running, it will launch a second copy on top of the first instead of
-  replacing it, leaving two sets of driver processes (e.g. duplicate
-  `piper_read_slave_joint`/`piper_ctrl_single_node`) racing each other over
-  the same physical hardware. Do one manual `/hardware/stop` +
-  `/hardware/launch` cycle (or the wizard's stop/relaunch controls) to
-  resync state before trusting the UI again.
+  it does make `launch_server` forget it ever started them. Clicking "Launch
+  Hardware" in the wizard in that state used to launch a second copy on top
+  of the first (two sets of driver processes, e.g. duplicate
+  `piper_read_slave_joint`/`piper_ctrl_single_node`, racing each other over
+  the same physical hardware) -- each `ros2 launch` step is now wrapped in a
+  non-blocking `flock` keyed by its step name (`_flock_wrap_ros2_launch` in
+  `launch_server/main.py`), so a second launch attempt for a step that's
+  still alive fails immediately instead of duplicating. The lock file lives
+  inside the *driver* container the step runs in (e.g.
+  `/tmp/arm_api2_gui_launch_arm_api2.lock` in `arm_api2_cont_jazzy`), not in
+  this container, so it survives a `gui_orchestrator` restart even though
+  `launch_server`'s own memory doesn't. Still worth doing one manual
+  `/hardware/stop` + `/hardware/launch` cycle (or the wizard's stop/relaunch
+  controls) after a restart to resync `/status` before trusting the UI.
 
 ## Env vars
 

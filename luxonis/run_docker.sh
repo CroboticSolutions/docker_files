@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONTAINER_NAME=ros2_oak_sr_cont
-IMAGE_NAME=ros2_oak_sr:humble
+IMAGE_NAME=croboticsolutions/oak_img:humble
 
 docker run \
   -it \

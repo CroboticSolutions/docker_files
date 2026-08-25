@@ -35,6 +35,17 @@ via `rosdep install` — this is the wrist-mounted camera for the welding cell,
 a physically different device from the workspace-view OAK camera that runs
 in its own container, so there's no overlap or conflict running both.
 
+The `Dockerfile` pre-installs `ros-jazzy-librealsense2`/`ros-jazzy-realsense2-camera`
+pinned to `2.58.3`/`4.58.3` from the `ros2-testing` repo *before* the `rosdep install`
+step, rather than letting rosdep fall back to the stable repo's `2.58.1`/`4.58.1` pairing.
+That older pairing has a silent `align_depth` bug — depth opens fine and raw depth
+publishes, but `aligned_depth_to_color/image_raw` never emits a frame, no error logged.
+Confirmed fixed as of the pinned `2.58.3`/`4.58.3` build — see
+[`../../realsense/README.md`](../../realsense/README.md) for the full writeup. If
+bumping these versions, install the library and wrapper together in one
+`apt-get install` call — installing them separately leaves an ABI-mismatched pair
+where depth output stops entirely (not just `align_depth`).
+
 ## Build
 
 ```bash

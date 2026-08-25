@@ -14,6 +14,23 @@ or by building both from source (needed for newer camera firmware or the latest 
 | `ROS_DISTRO` | `jazzy` | ROS2 distro: `humble`, `iron`, `jazzy`, `kilted`, `foxy` |
 | `UBUNTU_RELEASE` | `noble` | Ubuntu base image matching `ROS_DISTRO` (see table below) |
 | `BUILD_FROM_SOURCE` | `no` | `yes` builds librealsense2 + realsense-ros from source instead of using apt packages |
+| `REALSENSE_LIB_VERSION` | `2.58.3-1noble.20260720.173748` | Pinned `ros-jazzy-librealsense2` version (apt path only) — see note below |
+| `REALSENSE_CAMERA_VERSION` | `4.58.3-1noble.20260814.095845` | Pinned `ros-jazzy-realsense2-camera` version (apt path only) — see note below |
+
+**Why these are pinned to `ros2-testing` instead of using the stable repo's default:**
+the stable `ros2` apt repo's librealsense2/realsense2-camera pairing (`2.58.1`/`4.58.1`)
+has a silent `align_depth` bug — the Depth Module opens fine and raw depth publishes,
+but `align_depth.enable:=true` (and therefore `aligned_depth_to_color/image_raw`, which
+any RGB-D fusion consumer needs) never emits a single frame. No error, no warning, it
+just never publishes. Confirmed fixed in the `ros2-testing` repo's `2.58.3`/`4.58.3`
+pairing. If bumping these versions, **install the library and wrapper together in one
+`apt-get install` call** — doing it as two separate commands (e.g. upgrading just the
+library) leaves a version-mismatched pair: the wrapper logs "running with a different
+librealsense version than the one it was compiled with" and depth output stops
+entirely, not just `align_depth`. Also note `ros2-testing` only keeps the latest build,
+not a history — a version pinned here today may disappear from the feed later, same as
+`2.58.2` (the version this bug was first confirmed fixed on) had already vanished by the
+time `2.58.3` got pinned.
 
 `ROS_DISTRO` and `UBUNTU_RELEASE` must be set together and match:
 

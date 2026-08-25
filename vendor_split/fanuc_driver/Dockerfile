@@ -101,7 +101,24 @@ WORKDIR /root/fanuc_ws
 # in automatically here. This is the wrist-mounted camera for the welding cell,
 # a different device from the workspace-view OAK camera that runs in its own
 # container — no overlap.
-RUN apt-get update && \
+#
+# The stable ros2 repo's librealsense2/realsense2-camera pairing (2.58.1/4.58.1) has a
+# silent align_depth bug — the wrist D435's aligned_depth_to_color/image_raw never
+# publishes a single frame, no error logged (see docker_files/realsense/Dockerfile for the
+# full writeup). Pre-install the fixed, matched pair from ros2-testing (pinned, not
+# tracking testing's HEAD) *before* rosdep runs, so rosdep sees them already satisfied at
+# the right version instead of falling back to the broken stable-repo pair.
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+      -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+      http://packages.ros.org/ros2-testing/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME}") main" \
+      | tee /etc/apt/sources.list.d/ros2-testing.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ros-${ROS2_DISTRO}-librealsense2=2.58.3-1noble.20260720.173748 \
+      ros-${ROS2_DISTRO}-realsense2-camera=4.58.3-1noble.20260814.095845 \
+      ros-${ROS2_DISTRO}-realsense2-camera-msgs \
+      ros-${ROS2_DISTRO}-realsense2-description && \
     rosdep init || true && \
     rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y && \

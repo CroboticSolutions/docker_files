@@ -73,11 +73,34 @@ RUN echo "" >> ~/.bashrc && \
 ARG BUILD_FROM_SOURCE="no"
 ENV REALSENSE_WS=${HOME}/realsense_ws
 
+# The ros2 *stable* apt repo's librealsense2/realsense2-camera pairing (2.58.1/4.58.1,
+# built 2026-05/06) has a silent align_depth bug: the Depth Module opens fine and raw
+# depth publishes, but align_depth.enable:=true (and therefore
+# aligned_depth_to_color/image_raw, which any RGB-D fusion consumer needs) never emits a
+# single frame -- no error, no warning logged, it just never publishes. Confirmed fixed in
+# the ros2-testing repo's 2.58.3/4.58.3 pairing (built 2026-07-20/2026-08-14). Pinned to
+# that exact pairing rather than tracking testing's HEAD, since testing moves -- 2.58.2,
+# the version this was first confirmed fixed on, was already gone from the feed by the
+# time this got pinned.
+ARG REALSENSE_LIB_VERSION="2.58.3-1noble.20260720.173748"
+ARG REALSENSE_CAMERA_VERSION="4.58.3-1noble.20260814.095845"
+
 # --- Option 1 (default): install prebuilt packages from the ROS apt repo ---
 # https://github.com/realsenseai/realsense-ros - pulls in librealsense2 as a dependency.
+# Adds the ros2-testing repo (alongside the stable one already configured above) so the
+# pinned versions below are resolvable, then installs librealsense2 and realsense2-camera*
+# together in a single apt-get call. Installing them separately (e.g. upgrading just the
+# library, or just the wrapper) leaves a version-mismatched pair: the wrapper logs
+# "running with a different librealsense version than the one it was compiled with" and
+# depth output stops entirely, not just align_depth.
 RUN if [ "$BUILD_FROM_SOURCE" = "no" ]; then \
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2-testing/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2-testing.list > /dev/null && \
         apt-get update && \
-        apt-get install -y "ros-${ROS_DISTRO}-realsense2-*"; \
+        apt-get install -y \
+            "ros-${ROS_DISTRO}-librealsense2=${REALSENSE_LIB_VERSION}" \
+            "ros-${ROS_DISTRO}-realsense2-camera=${REALSENSE_CAMERA_VERSION}" \
+            "ros-${ROS_DISTRO}-realsense2-camera-msgs" \
+            "ros-${ROS_DISTRO}-realsense2-description"; \
     fi
 
 # --- Option 2: build librealsense2 + realsense-ros from source ---

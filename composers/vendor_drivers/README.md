@@ -55,8 +55,19 @@ the local image is missing, and only falling back to a local `docker compose
 build` if that pull fails. To start one manually:
 
 ```bash
-docker compose -f docker-compose.yml up -d arm_api2 piper_driver realsense
+./docker-compose-up.sh -f docker-compose.yml up -d arm_api2 piper_driver realsense
 ```
+
+`docker-compose-up.sh` is a thin wrapper (same pattern as
+`../demomotion/docker-compose-up.sh`) that runs `xhost +si:localuser:root`
+before `docker compose "$@"`, so RViz (launched inside `piper_driver_cont` by
+the MoveIt launch files) can actually open a window -- `DISPLAY` and
+`/tmp/.X11-unix` are already mounted into these containers below, but nothing
+authorizes them against the host's X server otherwise. **Note:**
+`hardware_stacks.py` currently calls `docker compose` directly, not this
+wrapper, so the wizard's auto-start path still needs either that script
+pointed at this wrapper or an equivalent `xhost` grant done once per login on
+the host (e.g. in `~/.xprofile`) to get the same effect.
 
 Containers are meant to stay up (idle `bash`) between wizard launches --
 `hardware_stacks.py` only starts/stops the `ros2 launch` process trees

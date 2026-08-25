@@ -48,16 +48,28 @@ docker run -it --rm --network host --name piper_driver piper_driver:latest
 adapter), which needs privileged access and a visible device node:
 
 ```bash
+xhost +si:localuser:root   # let the (root) container open windows on your X server
 docker run -it --rm \
   --network host \
   --privileged \
   -v /dev:/dev \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
   --name piper_driver \
   piper_driver:latest
 ```
 
-or `bash run_docker.sh` (defaults to the real-hardware flags above; drop
+or `bash run_docker.sh` (defaults to the real-hardware flags above, including
+the `xhost`/`DISPLAY`/X11-socket wiring so RViz can actually pop up; drop
 `--privileged`/`-v /dev:/dev` for simulation-only use).
+
+RViz is spawned inside this container by the MoveIt launch files
+(`demo.launch.py`, `demo_arm_api2.launch.py`) — without the `DISPLAY` env var
+and `/tmp/.X11-unix` socket mount above, it has no X server to render to and
+either fails silently or errors with something like `qt.qpa.plugin: Could not
+load the Qt platform plugin "xcb"`. The `xhost +si:localuser:root` grant is
+scoped to local root processes (this container runs as root) rather than the
+wider `xhost +local:docker`/`xhost +`.
 
 Pushed to Docker Hub as `croboticsolutions/piper_driver:jazzy`.
 `demomotion_gui`'s `launch_server` uses this container directly as the real

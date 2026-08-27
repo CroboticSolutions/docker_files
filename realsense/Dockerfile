@@ -15,6 +15,10 @@ ENV ROS_DISTRO=${ROS_DISTRO}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Zagreb
 ENV RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}]: {message}"
+# Matches every other container in the stack (gui_orchestrator, arm_api2, etc.) --
+# needed for realsense2_camera_node to launch cleanly against the source-built
+# librealsense2/realsense2_camera pair below, see align_depth_realsense2_camera_fix.md.
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 # Setup timezone (fix interactive package installation)
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
@@ -49,7 +53,8 @@ RUN apt-get update
 # Install ROS2
 RUN apt-get install -y \
     ros-${ROS_DISTRO}-desktop \
-    ros-${ROS_DISTRO}-generate-parameter-library
+    ros-${ROS_DISTRO}-generate-parameter-library \
+    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp
 
 # Install ROS2 tools
 RUN apt-get install -y \
@@ -68,42 +73,45 @@ RUN echo "" >> ~/.bashrc && \
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
 
 # Build argument to build realsense-ros (and librealsense2) from source instead of apt.
-# Use "yes" when you need a newer librealsense2/firmware support than what's in the
-# ROS apt repos, or want to track the ros2-master branch directly.
-ARG BUILD_FROM_SOURCE="no"
+ARG BUILD_FROM_SOURCE="yes"
 ENV REALSENSE_WS=${HOME}/realsense_ws
 
 # The ros2 *stable* apt repo's librealsense2/realsense2-camera pairing (2.58.1/4.58.1,
 # built 2026-05/06) has a silent align_depth bug: the Depth Module opens fine and raw
 # depth publishes, but align_depth.enable:=true (and therefore
 # aligned_depth_to_color/image_raw, which any RGB-D fusion consumer needs) never emits a
-# single frame -- no error, no warning logged, it just never publishes. Confirmed fixed in
-# the ros2-testing repo's 2.58.3/4.58.3 pairing (built 2026-07-20/2026-08-14). Pinned to
-# that exact pairing rather than tracking testing's HEAD, since testing moves -- 2.58.2,
-# the version this was first confirmed fixed on, was already gone from the feed by the
-# time this got pinned.
-ARG REALSENSE_LIB_VERSION="2.58.3-1noble.20260720.173748"
-ARG REALSENSE_CAMERA_VERSION="4.58.3-1noble.20260814.095845"
+# single frame -- no error, no warning logged, it just never publishes.
+#
+# The ros2-testing repo's 2.58.3/4.58.3 pairing was *thought* fixed and pinned here
+# briefly, but turned out to have the exact same silent-drop bug on live testing (see
+# errors.md's "UPDATE 2026-08-25" and align_depth_realsense2_camera_fix.md) -- do not
+# go back to installing ros2-testing's librealsense2/realsense2-camera for align_depth.
+# The only version pair actually confirmed working end-to-end (color + aligned depth +
+# HaMeR hand mesh, verified live on realsense_cont) is librealsense2 v2.58.2 +
+# realsense2-camera 4.58.2, both source-built (2.58.2 is no longer resolvable via apt --
+# ros2-testing only keeps its latest build, and that build has since moved past it) --
+# hence BUILD_FROM_SOURCE defaults to "yes" here, not "no".
+ARG REALSENSE_LIB_TAG="v2.58.2"
+ARG REALSENSE_CAMERA_TAG="4.58.2"
 
-# --- Option 1 (default): install prebuilt packages from the ROS apt repo ---
-# https://github.com/realsenseai/realsense-ros - pulls in librealsense2 as a dependency.
-# Adds the ros2-testing repo (alongside the stable one already configured above) so the
-# pinned versions below are resolvable, then installs librealsense2 and realsense2-camera*
-# together in a single apt-get call. Installing them separately (e.g. upgrading just the
-# library, or just the wrapper) leaves a version-mismatched pair: the wrapper logs
-# "running with a different librealsense version than the one it was compiled with" and
-# depth output stops entirely, not just align_depth.
+# --- Option 1: install prebuilt packages from the ROS apt repo (NOT recommended --
+# see the align_depth note above; kept only for a quick non-align_depth smoke test) ---
 RUN if [ "$BUILD_FROM_SOURCE" = "no" ]; then \
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2-testing/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2-testing.list > /dev/null && \
         apt-get update && \
         apt-get install -y \
-            "ros-${ROS_DISTRO}-librealsense2=${REALSENSE_LIB_VERSION}" \
-            "ros-${ROS_DISTRO}-realsense2-camera=${REALSENSE_CAMERA_VERSION}" \
+            "ros-${ROS_DISTRO}-librealsense2" \
+            "ros-${ROS_DISTRO}-realsense2-camera" \
             "ros-${ROS_DISTRO}-realsense2-camera-msgs" \
             "ros-${ROS_DISTRO}-realsense2-description"; \
     fi
 
-# --- Option 2: build librealsense2 + realsense-ros from source ---
+# --- Option 2 (default): build librealsense2 + realsense-ros from source, pinned to the
+# exact tags confirmed working with align_depth. librealsense2 installs straight into the
+# ROS prefix (not /usr/local) so realsense2_camera_node resolves it via the normal
+# `source /opt/ros/${ROS_DISTRO}/setup.bash` -- no extra LD_LIBRARY_PATH/AMENT_PREFIX_PATH
+# overlay needed at runtime (that overlay was the workaround needed for the original,
+# not-baked-in ported build -- see align_depth_realsense2_camera_fix.md's "Still
+# outstanding" section, which this Dockerfile change resolves). ---
 RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
         apt-get update && apt-get install -y \
             software-properties-common \
@@ -113,17 +121,31 @@ RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
             pkg-config \
             libgtk-3-dev \
             python3-dev \
-            python3-pip && \
-        git clone --depth 1 https://github.com/IntelRealSense/librealsense.git /tmp/librealsense && \
+            python3-pip; \
+    fi
+
+# udev rules only matter for the real device at *runtime* (this container is run
+# --privileged with /dev bind-mounted, like every other driver container here) --
+# setup_udev_rules.sh's own `sudo udevadm control --reload-rules && ... trigger` tail
+# reliably fails in a Docker build sandbox (no running udev/systemd daemon), so it's
+# `|| true`'d rather than let it silently abort the rest of this chain.
+RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
+        git clone --depth 1 --branch ${REALSENSE_LIB_TAG} https://github.com/IntelRealSense/librealsense.git /tmp/librealsense && \
         cd /tmp/librealsense && \
-        ./scripts/setup_udev_rules.sh && \
+        (./scripts/setup_udev_rules.sh || true) && \
         mkdir build && cd build && \
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DFORCE_RSUSB_BACKEND=true && \
+        cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DFORCE_RSUSB_BACKEND=true && \
         make -j$(nproc) && make install && ldconfig && \
-        rm -rf /tmp/librealsense && \
+        rm -rf /tmp/librealsense; \
+    fi
+
+RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
+        rosdep init || true && rosdep update; \
+    fi
+
+RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
         mkdir -p ${REALSENSE_WS}/src && \
-        git clone https://github.com/realsenseai/realsense-ros.git -b ros2-master ${REALSENSE_WS}/src/realsense-ros && \
-        rosdep init || true && rosdep update && \
+        git clone --depth 1 --branch ${REALSENSE_CAMERA_TAG} https://github.com/realsenseai/realsense-ros.git ${REALSENSE_WS}/src/realsense-ros && \
         bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
                  cd ${REALSENSE_WS} && \
                  rosdep install --from-paths src --ignore-src -r -y && \

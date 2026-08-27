@@ -4,8 +4,9 @@ Docker image with ROS2 and the [realsense-ros](https://github.com/realsenseai/re
 for Intel/RealSense depth cameras (D400/D500 series, etc.).
 
 `realsense-ros` is ROS2-only (ROS1 support has been discontinued). This image installs
-librealsense2 and realsense-ros either from the prebuilt ROS apt packages (default, fast)
-or by building both from source (needed for newer camera firmware or the latest driver features).
+librealsense2 and realsense-ros either by building both from source, pinned to the exact
+tags confirmed working with `align_depth` (default), or from the prebuilt ROS apt
+packages (opt-in, faster, but **known broken for `align_depth`** — see below).
 
 ## Build Arguments
 
@@ -13,24 +14,35 @@ or by building both from source (needed for newer camera firmware or the latest 
 |----------|---------|--------------|
 | `ROS_DISTRO` | `jazzy` | ROS2 distro: `humble`, `iron`, `jazzy`, `kilted`, `foxy` |
 | `UBUNTU_RELEASE` | `noble` | Ubuntu base image matching `ROS_DISTRO` (see table below) |
-| `BUILD_FROM_SOURCE` | `no` | `yes` builds librealsense2 + realsense-ros from source instead of using apt packages |
-| `REALSENSE_LIB_VERSION` | `2.58.3-1noble.20260720.173748` | Pinned `ros-jazzy-librealsense2` version (apt path only) — see note below |
-| `REALSENSE_CAMERA_VERSION` | `4.58.3-1noble.20260814.095845` | Pinned `ros-jazzy-realsense2-camera` version (apt path only) — see note below |
+| `BUILD_FROM_SOURCE` | `yes` | `no` falls back to the apt packages instead — see the align_depth warning below before using this |
+| `REALSENSE_LIB_TAG` | `v2.58.2` | `librealsense` git tag to build (source path only) |
+| `REALSENSE_CAMERA_TAG` | `4.58.2` | `realsense-ros` git tag to build (source path only) |
 
-**Why these are pinned to `ros2-testing` instead of using the stable repo's default:**
-the stable `ros2` apt repo's librealsense2/realsense2-camera pairing (`2.58.1`/`4.58.1`)
-has a silent `align_depth` bug — the Depth Module opens fine and raw depth publishes,
-but `align_depth.enable:=true` (and therefore `aligned_depth_to_color/image_raw`, which
-any RGB-D fusion consumer needs) never emits a single frame. No error, no warning, it
-just never publishes. Confirmed fixed in the `ros2-testing` repo's `2.58.3`/`4.58.3`
-pairing. If bumping these versions, **install the library and wrapper together in one
-`apt-get install` call** — doing it as two separate commands (e.g. upgrading just the
-library) leaves a version-mismatched pair: the wrapper logs "running with a different
-librealsense version than the one it was compiled with" and depth output stops
-entirely, not just `align_depth`. Also note `ros2-testing` only keeps the latest build,
-not a history — a version pinned here today may disappear from the feed later, same as
-`2.58.2` (the version this bug was first confirmed fixed on) had already vanished by the
-time `2.58.3` got pinned.
+**Why source-built and pinned to these exact tags:** every apt-available pairing has a
+silent `align_depth` bug — the Depth Module opens fine and raw depth publishes, but
+`align_depth.enable:=true` (and therefore `aligned_depth_to_color/image_raw`, which any
+RGB-D fusion consumer needs, e.g. HaMeR hand-mesh tracking) never emits a single frame.
+No error, no warning, it just never publishes. This includes both the stable `ros2` apt
+repo's `2.58.1`/`4.58.1` pairing *and* the `ros2-testing` repo's `2.58.3`/`4.58.3`
+pairing — `2.58.3`/`4.58.3` was briefly believed fixed and pinned here, but reproduced
+the exact same silent-drop bug on live testing (see `errors.md`'s "UPDATE 2026-08-25"
+and `align_depth_realsense2_camera_fix.md` in `DemoMotion/docs_demo`) — **do not go back
+to installing `ros2-testing`'s librealsense2/realsense2-camera for align_depth.** The
+only pair confirmed working end-to-end (color + aligned depth + downstream consumers,
+verified live) is `librealsense2` `v2.58.2` + `realsense2-camera` `4.58.2` — `2.58.2` is
+no longer resolvable via apt at all (`ros2-testing` only keeps its single latest build,
+and it's since moved past `2.58.2` with no cached `.deb` anywhere), hence building both
+from source pinned to their matching git tags. The source build installs librealsense2
+straight into the ROS prefix (`/opt/ros/${ROS_DISTRO}`, not `/usr/local`), so
+`realsense2_camera_node` resolves it via the normal `source
+/opt/ros/${ROS_DISTRO}/setup.bash` with no extra `LD_LIBRARY_PATH`/`AMENT_PREFIX_PATH`
+overlay needed at runtime.
+
+If you do use `BUILD_FROM_SOURCE=no` for a quick non-`align_depth` smoke test, install
+the library and wrapper together in one `apt-get install` call — doing it as two
+separate commands (e.g. upgrading just the library) leaves a version-mismatched pair:
+the wrapper logs "running with a different librealsense version than the one it was
+compiled with" and depth output stops entirely, not just `align_depth`.
 
 `ROS_DISTRO` and `UBUNTU_RELEASE` must be set together and match:
 
@@ -43,14 +55,14 @@ time `2.58.3` got pinned.
 ## Build
 
 ```bash
-# Default: Jazzy on Noble, realsense2 packages from apt
+# Default: Jazzy on Noble, librealsense2 v2.58.2 + realsense-ros 4.58.2 from source
 docker build -t realsense_img:jazzy .
 
 # Humble on Jammy
 docker build --build-arg ROS_DISTRO=humble --build-arg UBUNTU_RELEASE=jammy -t realsense_img:humble .
 
-# Build librealsense2 + realsense-ros from source (e.g. for newer firmware support)
-docker build --build-arg BUILD_FROM_SOURCE=yes -t realsense_img:jazzy-src .
+# Apt packages instead (fast, but NOT align_depth-safe -- see warning above)
+docker build --build-arg BUILD_FROM_SOURCE=no -t realsense_img:jazzy-apt .
 ```
 
 ## Run
@@ -96,5 +108,5 @@ ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true
 
 ## System Requirements
 
-- Disk space: ~4GB (apt install), ~6GB (build from source)
+- Disk space: ~6GB (build from source, default), ~4GB (`BUILD_FROM_SOURCE=no` apt install)
 - A RealSense camera connected via USB

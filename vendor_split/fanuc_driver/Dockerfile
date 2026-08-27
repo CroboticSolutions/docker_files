@@ -102,27 +102,59 @@ WORKDIR /root/fanuc_ws
 # a different device from the workspace-view OAK camera that runs in its own
 # container — no overlap.
 #
-# The stable ros2 repo's librealsense2/realsense2-camera pairing (2.58.1/4.58.1) has a
-# silent align_depth bug — the wrist D435's aligned_depth_to_color/image_raw never
-# publishes a single frame, no error logged (see docker_files/realsense/Dockerfile for the
-# full writeup). Pre-install the fixed, matched pair from ros2-testing (pinned, not
-# tracking testing's HEAD) *before* rosdep runs, so rosdep sees them already satisfied at
-# the right version instead of falling back to the broken stable-repo pair.
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-      -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-      http://packages.ros.org/ros2-testing/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME}") main" \
-      | tee /etc/apt/sources.list.d/ros2-testing.list > /dev/null && \
-    apt-get update && \
+# Install plain apt packages first purely to satisfy rosdep's dependency check --
+# the librealsense2/realsense2-camera .so/binaries get overwritten by the pinned
+# source build right after, so the exact apt version pulled in here doesn't matter.
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      ros-${ROS2_DISTRO}-librealsense2=2.58.3-1noble.20260720.173748 \
-      ros-${ROS2_DISTRO}-realsense2-camera=4.58.3-1noble.20260814.095845 \
+      ros-${ROS2_DISTRO}-librealsense2 \
+      ros-${ROS2_DISTRO}-realsense2-camera \
       ros-${ROS2_DISTRO}-realsense2-camera-msgs \
       ros-${ROS2_DISTRO}-realsense2-description && \
     rosdep init || true && \
     rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y && \
     rm -rf /var/lib/apt/lists/*
+
+# Both the stable ros2 repo's librealsense2/realsense2-camera pairing (2.58.1/4.58.1)
+# AND the ros2-testing pairing (2.58.3/4.58.3, previously pinned here) have a silent
+# align_depth bug — the wrist D435's aligned_depth_to_color/image_raw never publishes a
+# single frame, no error logged. The only pair confirmed working end-to-end is
+# librealsense2 v2.58.2 + realsense2-camera 4.58.2, source-built (see
+# docker_files/realsense/Dockerfile and align_depth_realsense2_camera_fix.md for the
+# full writeup). Installed straight into the ROS prefix (--merge-install, matching the
+# apt packages' own layout it's overwriting) so every consumer picks it up automatically
+# via the normal `source /opt/ros/${ROS2_DISTRO}/setup.bash` — no extra
+# LD_LIBRARY_PATH/AMENT_PREFIX_PATH overlay needed at runtime.
+ARG REALSENSE_LIB_TAG="v2.58.2"
+ARG REALSENSE_CAMERA_TAG="4.58.2"
+# udev rules only matter for the real device at *runtime* -- setup_udev_rules.sh's own
+# `sudo udevadm control --reload-rules && ... trigger` tail reliably fails in a Docker
+# build sandbox (no running udev/systemd daemon), so it's `|| true`'d rather than let it
+# silently abort the rest of this chain.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      software-properties-common \
+      libssl-dev \
+      libusb-1.0-0-dev \
+      libudev-dev \
+      pkg-config \
+      libgtk-3-dev \
+      python3-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    git clone --depth 1 --branch ${REALSENSE_LIB_TAG} https://github.com/IntelRealSense/librealsense.git /tmp/librealsense && \
+    cd /tmp/librealsense && \
+    (./scripts/setup_udev_rules.sh || true) && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS2_DISTRO} -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DFORCE_RSUSB_BACKEND=true && \
+    make -j$(nproc) && make install && ldconfig && \
+    rm -rf /tmp/librealsense && \
+    mkdir -p /tmp/realsense_ros_ws/src && \
+    git clone --depth 1 --branch ${REALSENSE_CAMERA_TAG} https://github.com/realsenseai/realsense-ros.git /tmp/realsense_ros_ws/src/realsense-ros && \
+    bash -c "source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+             cd /tmp/realsense_ros_ws && \
+             rosdep install --from-paths src --ignore-src -r -y && \
+             colcon build --merge-install --install-base /opt/ros/${ROS2_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release" && \
+    rm -rf /tmp/realsense_ros_ws
 
 RUN pip3 install --no-cache-dir --break-system-packages \
       empy \

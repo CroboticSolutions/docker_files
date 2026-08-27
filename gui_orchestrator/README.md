@@ -30,22 +30,25 @@ before you expose this container's ports beyond that.
 
 ## Build
 
-`ros2_dash_gui` and `aiortc_webrtc_ros` are both private repos, cloned over
-SSH at build time -- build with BuildKit and your forwarded SSH agent (needs
-a key with read access to both `CroboticSolutions/ros2_dash_gui` and
-`CroboticSolutions/aiortc_webrtc_ros`; check with `ssh-add -l`). This Dockerfile
-lives in `docker_files`, but the frontend/launch_server source it `COPY`s is
-in `demomotion_gui`, so the build uses two contexts: the main one is
-`demomotion_gui`, plus a named `orchestrator` context pointing back at this
-directory for `entrypoint.sh`:
+`demomotion_gui`, `ros2_dash_gui`, and `aiortc_webrtc_ros` are all private
+repos, cloned over SSH at build time -- build with BuildKit and your
+forwarded SSH agent (needs a key with read access to all three
+`CroboticSolutions` repos; check with `ssh-add -l`). No local
+`demomotion_gui` checkout is needed -- everything this Dockerfile needs
+(itself + `entrypoint.sh`) lives in `docker_files`, so it's a single-context
+build:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build --ssh default \
-  --build-context orchestrator=/home/martin/Crobotics/docker_files/gui_orchestrator \
   -t gui_orchestrator \
   -f /home/martin/Crobotics/docker_files/gui_orchestrator/Dockerfile \
-  /home/martin/Crobotics/demomotion_gui
+  /home/martin/Crobotics/docker_files/gui_orchestrator
 ```
+
+`ROS2_DASH_GUI_BRANCH` (default `mstigla/devel`) and
+`DEMOMOTION_GUI_BRANCH` (default `merge/main-into-mstigla-compose-devel`)
+are build args if you need a different branch, e.g. `--build-arg
+DEMOMOTION_GUI_BRANCH=main`.
 
 ## Run
 
@@ -116,15 +119,15 @@ dead component), but it means:
   any single child dying (a crash, an OOM, an accidental `kill`) silently
   deletes the container instead of leaving something to `docker start`/
   `docker logs` after the fact.
-- A container restart **does not pick up source changes** -- both
-  `demomotion_gui` (frontend + `launch_server`) and `ros2_dash_gui` are
-  `COPY`'d/`git clone`'d at *build* time, not bind-mounted. You need a
+- A container restart **does not pick up source changes** -- `demomotion_gui`
+  (frontend + `launch_server`), `ros2_dash_gui`, and `aiortc_webrtc_ros` are
+  all `git clone`'d at *build* time, not bind-mounted. You need a
   `docker build` first. Note also that a plain rebuild can reuse Docker's
-  cached layer for the `ros2_dash_gui` `git clone` step even after new
-  commits land on its branch, since the `RUN git clone ...` command text
-  itself hasn't changed -- if you only changed something in that repo (not
-  this Dockerfile or `demomotion_gui`), rebuild with `--no-cache` or you'll
-  silently get the old bridge code.
+  cached layer for a `git clone` step even after new commits land on that
+  repo's branch, since the `RUN git clone ...` command text itself hasn't
+  changed -- if you only changed something in one of those repos (not this
+  Dockerfile), rebuild with `--no-cache` or you'll silently get the old
+  code.
 - `launch_server`'s hardware-stack bookkeeping (`/status`'s
   `hardware_running`/`hardware_stack_id`) lives in this process's own
   memory. Restarting this container does **not** stop the real robot

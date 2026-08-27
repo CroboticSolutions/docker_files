@@ -13,16 +13,14 @@
 # time -- see README.md next to this file for the full run command; this
 # image alone is not runnable as a complete stack.
 #
-# Build (ros2_dash_gui is a private repo, cloned over SSH -- needs a key with
-# read access loaded in your agent, see `ssh-add -l`). Two contexts: the main
-# one is demomotion_gui (frontend + launch_server source), plus a named
-# "orchestrator" context pointing at this directory for entrypoint.sh, since
-# this Dockerfile no longer lives inside the demomotion_gui repo:
+# Build (demomotion_gui and ros2_dash_gui are both private repos, cloned over
+# SSH -- needs a key with read access loaded in your agent, see `ssh-add -l`).
+# No local demomotion_gui checkout needed as build context -- everything this
+# Dockerfile needs (itself + entrypoint.sh) lives in docker_files:
 #   DOCKER_BUILDKIT=1 docker build --ssh default \
-#     --build-context orchestrator=/home/martin/Crobotics/docker_files/gui_orchestrator \
 #     -t gui_orchestrator \
 #     -f /home/martin/Crobotics/docker_files/gui_orchestrator/Dockerfile \
-#     /home/martin/Crobotics/demomotion_gui
+#     /home/martin/Crobotics/docker_files/gui_orchestrator
 
 FROM ubuntu:noble
 
@@ -30,6 +28,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG ROS2_DISTRO=jazzy
 ARG ROS2_DASH_GUI_BRANCH=mstigla/devel
+ARG DEMOMOTION_GUI_BRANCH=merge/main-into-mstigla-compose-devel
 ARG NODE_MAJOR=24
 
 ENV HOME=/root \
@@ -176,16 +175,18 @@ RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     colcon build --symlink-install
 
 # --- demomotion_gui: frontend (built, served by launch_server) + backend ---
+# Private repo, cloned over SSH like ros2_dash_gui/aiortc_webrtc_ros above --
+# no local checkout needed as build context anymore.
 
 WORKDIR /opt/demomotion_gui
 
-COPY package.json package-lock.json ./
+RUN --mount=type=ssh git clone -b ${DEMOMOTION_GUI_BRANCH} \
+      git@github.com:CroboticSolutions/demomotion_gui.git .
+
 RUN npm install --legacy-peer-deps
 
-COPY launch_server/requirements.txt launch_server/requirements.txt
 RUN python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed -r launch_server/requirements.txt
 
-COPY . .
 RUN npm run build
 
 RUN echo "" >> /root/.bashrc && \
@@ -193,7 +194,7 @@ RUN echo "" >> /root/.bashrc && \
     echo "source /root/arms_ws/install/setup.bash" >> /root/.bashrc && \
     echo "export RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION}" >> /root/.bashrc
 
-COPY --from=orchestrator entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV ARM_API2_LAUNCH_LOG_DIR=/tmp/arm_api2_gui_launch_logs

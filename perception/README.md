@@ -75,7 +75,7 @@ MANO_DIR=/secure/path/to/mano ./run_docker.sh \
   ros2 launch mp_wrapper_ros hamer_mp_hamer_oak_d_pro_w.launch.py
 ```
 
-The directory is mounted read-only at `/opt/arm_perception/models/mano`. When
+The directory is mounted read-only at `/root/arm_perception/models/mano`. When
 `MANO_DIR` is supplied, startup checks that SAM, WiLoR, MANO, and CUDA are all
 available.
 
@@ -102,7 +102,7 @@ Source branches can also be overridden with `HPE_ROS_MSGS_BRANCH`,
 The exact branch heads used for an image are recorded inside it at:
 
 ```text
-/opt/arm_perception/SOURCE_REVISIONS
+/root/arm_perception/SOURCE_REVISIONS
 ```
 
 ## Image design
@@ -113,7 +113,6 @@ The exact branch heads used for an image are recorded inside it at:
 - verified ROS apt-source package and model checksums
 - BuildKit SSH forwarding; no private key is copied into the image
 - verified GitHub host keys instead of build-time `ssh-keyscan`
-- non-root runtime user
 - source-aware cache invalidation and independent model cache
 - import/ABI smoke test during the build
 

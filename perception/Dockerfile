@@ -6,7 +6,7 @@ ARG CUDA_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04@sha256:ac55d124da488
 FROM ${CUDA_IMAGE} AS ros_runtime_base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
+ENV HOME=/root
 ARG DEBIAN_FRONTEND=noninteractive
 ARG ROS_DISTRO=jazzy
 ARG ROS_APT_SOURCE_VERSION=1.2.0
@@ -17,11 +17,11 @@ ENV LANG=en_US.UTF-8 \
     ROS_DISTRO=${ROS_DISTRO} \
     RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
     PYTHONUNBUFFERED=1 \
-    PERCEPTION_ROOT=/opt/arm_perception \
-    PERCEPTION_WS=/opt/arm_perception/ws \
-    VIRTUAL_ENV=/opt/arm_perception/venv \
-    PATH=/opt/arm_perception/venv/bin:${PATH} \
-    PYTHONPATH=/opt/arm_perception/venv/lib/python3.12/site-packages:/opt/arm_perception/ws/src/WiLoR
+    PERCEPTION_ROOT=/root/arm_perception \
+    PERCEPTION_WS=/root/arm_perception/perception_ws \
+    VIRTUAL_ENV=/root/arm_perception/venv \
+    PATH=/root/arm_perception/venv/bin:${PATH} \
+    PYTHONPATH=/root/arm_perception/venv/lib/python3.12/site-packages:/root/arm_perception/perception_ws/src/WiLoR
 
 # Configure the official ROS repository using the signed ros2-apt-source package.
 # Cache mounts speed up rebuilds without leaving apt indexes in the image layers.
@@ -242,7 +242,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-${ROS_DISTRO}-ament-cmake \
         ros-${ROS_DISTRO}-rosidl-default-generators
 
-COPY --from=python_builder /opt/arm_perception/venv /opt/arm_perception/venv
+COPY --from=python_builder /root/arm_perception/venv /root/arm_perception/venv
 
 RUN install -d -m 0700 /root/.ssh
 COPY --chmod=0600 <<'KNOWN_HOSTS' /root/.ssh/known_hosts
@@ -251,7 +251,7 @@ github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAA
 github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
 KNOWN_HOSTS
 
-WORKDIR /opt/arm_perception/ws
+WORKDIR /root/arm_perception/perception_ws
 
 RUN --mount=type=ssh,required=true set -eux; \
     echo "Refreshing source set ${SOURCE_REFRESH}"; \
@@ -283,31 +283,31 @@ RUN --mount=type=ssh,required=true set -eux; \
         done; \
     } > SOURCE_REVISIONS; \
     sed -i \
-        -e 's#/root/arms_ws/src/segment-anything/checkpoints/sam_vit_b_01ec64.pth#/opt/arm_perception/models/sam/sam_vit_b_01ec64.pth#g' \
+        -e 's#/root/arms_ws/src/segment-anything/checkpoints/sam_vit_b_01ec64.pth#/root/arm_perception/models/sam/sam_vit_b_01ec64.pth#g' \
         src/sam_ros2/sam_ros2/sam_ros_wrapper.py; \
     sed -i \
-        -e 's#/root/py_global#/opt/arm_perception/venv#g' \
+        -e 's#/root/py_global#/root/arm_perception/venv#g' \
         -e 's#segment_anything_path = .*#segment_anything_path = venv_site_packages#' \
-        -e 's#/root/arms_ws#/opt/arm_perception/ws#g' \
+        -e 's#/root/arms_ws#/root/arm_perception/perception_ws#g' \
         src/sam_ros2/launch/sam_interactive.launch.py; \
     sed -i \
-        -e 's#/root/arms_ws#/opt/arm_perception/ws#g' \
+        -e 's#/root/arms_ws#/root/arm_perception/perception_ws#g' \
         src/sam_ros2/scripts/sam_api_bridge.py; \
     sed -i \
-        -e 's#/root/arms_ws/src/mp_ros2_wrapper/models#/opt/arm_perception/ws/install/share/mp_wrapper_ros/models#g' \
-        -e 's#/root/arms_ws#/opt/arm_perception/ws#g' \
-        -e 's#/root/hamer/_DATA/data/mano#/opt/arm_perception/models/mano#g' \
-        -e 's#/root/hamer#/opt/arm_perception/hamer#g' \
-        -e 's#wilor_checkpoint: "pretrained_models/wilor_final.ckpt"#wilor_checkpoint: "/opt/arm_perception/models/wilor/wilor_final.ckpt"#g' \
+        -e 's#/root/arms_ws/src/mp_ros2_wrapper/models#/root/arm_perception/perception_ws/install/share/mp_wrapper_ros/models#g' \
+        -e 's#/root/arms_ws#/root/arm_perception/perception_ws#g' \
+        -e 's#/root/hamer/_DATA/data/mano#/root/arm_perception/models/mano#g' \
+        -e 's#/root/hamer#/root/arm_perception/hamer#g' \
+        -e 's#wilor_checkpoint: "pretrained_models/wilor_final.ckpt"#wilor_checkpoint: "/root/arm_perception/models/wilor/wilor_final.ckpt"#g' \
         src/mp_ros2_wrapper/config/mp_config_oak_d_pro_w.yaml \
         src/mp_ros2_wrapper/config/mp_config_realsense_d435.yaml; \
     sed -i \
-        -e 's#/root/arms_ws#/opt/arm_perception/ws#g' \
-        -e 's#/root/hamer#/opt/arm_perception/hamer#g' \
-        -e 's#/root/hpe_ws#/opt/arm_perception/hpe_ws#g' \
+        -e 's#/root/arms_ws#/root/arm_perception/perception_ws#g' \
+        -e 's#/root/hamer#/root/arm_perception/hamer#g' \
+        -e 's#/root/hpe_ws#/root/arm_perception/hpe_ws#g' \
         src/mp_ros2_wrapper/mp_wrapper_ros/hamer_bridge.py; \
     sed -i \
-        -e 's#/root/arms_ws#/opt/arm_perception/ws#g' \
+        -e 's#/root/arms_ws#/root/arm_perception/perception_ws#g' \
         src/mp_ros2_wrapper/mp_wrapper_ros/wilor_bridge.py; \
     find src -mindepth 2 -maxdepth 2 -type d -name .git -prune -exec rm -rf '{}' +
 
@@ -353,60 +353,30 @@ FROM ros_runtime_base AS runtime
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ARG APP_UID=1000
-ARG APP_GID=1000
-
 LABEL org.opencontainers.image.title="ARM perception" \
     org.opencontainers.image.description="ROS 2 Jazzy SAM, MediaPipe/WiLoR, and hand-eye calibration runtime" \
     org.opencontainers.image.vendor="Crobotic Solutions"
 
-# Ubuntu 24.04 CUDA images already ship ubuntu:1000:1000. Reuse that
-# identity when APP_UID/APP_GID collide instead of failing groupadd.
-RUN set -eux; \
-    existing_group="$(getent group "${APP_GID}" | cut -d: -f1 || true)"; \
-    if [[ -z "${existing_group}" ]]; then \
-        groupadd --gid "${APP_GID}" perception; \
-    elif [[ "${existing_group}" != perception ]]; then \
-        groupmod --new-name perception "${existing_group}"; \
-    fi; \
-    existing_user="$(getent passwd "${APP_UID}" | cut -d: -f1 || true)"; \
-    if [[ -z "${existing_user}" ]]; then \
-        useradd --no-log-init \
-            --uid "${APP_UID}" \
-            --gid "${APP_GID}" \
-            --create-home \
-            --home-dir /home/perception \
-            --shell /bin/bash \
-            perception; \
-    elif [[ "${existing_user}" != perception ]]; then \
-        usermod \
-            --login perception \
-            --home /home/perception \
-            --move-home \
-            --shell /bin/bash \
-            --gid perception \
-            "${existing_user}"; \
-    fi; \
-    install -d -o perception -g perception \
-        /home/perception/.cache \
-        /home/perception/.config/matplotlib \
-        /home/perception/.ros \
-        /opt/arm_perception/models/mano \
-        /opt/arm_perception/ws/src/sam_ros2/scripts
+RUN install -d \
+    /root/.cache \
+    /root/.config/matplotlib \
+    /root/.ros \
+    /root/arm_perception/models/mano \
+    /root/arm_perception/perception_ws/src/sam_ros2/scripts
 
-COPY --from=python_builder --chown=perception:perception \
-    /opt/arm_perception/venv /opt/arm_perception/venv
-COPY --from=workspace_builder --chown=perception:perception \
-    /opt/arm_perception/ws/install /opt/arm_perception/ws/install
-COPY --from=workspace_builder --chown=perception:perception \
-    /opt/arm_perception/ws/SOURCE_REVISIONS /opt/arm_perception/SOURCE_REVISIONS
-COPY --from=workspace_builder --chown=perception:perception \
-    /opt/arm_perception/ws/src/WiLoR /opt/arm_perception/ws/src/WiLoR
-COPY --from=workspace_builder --chown=perception:perception \
-    /opt/arm_perception/ws/src/sam_ros2/scripts/sam_api_bridge.py \
-    /opt/arm_perception/ws/src/sam_ros2/scripts/sam_api_bridge.py
-COPY --from=model_assets --chown=perception:perception \
-    /opt/arm_perception/models /opt/arm_perception/models
+COPY --from=python_builder \
+    /root/arm_perception/venv /root/arm_perception/venv
+COPY --from=workspace_builder \
+    /root/arm_perception/perception_ws/install /root/arm_perception/perception_ws/install
+COPY --from=workspace_builder \
+    /root/arm_perception/perception_ws/SOURCE_REVISIONS /root/arm_perception/SOURCE_REVISIONS
+COPY --from=workspace_builder \
+    /root/arm_perception/perception_ws/src/WiLoR /root/arm_perception/perception_ws/src/WiLoR
+COPY --from=workspace_builder \
+    /root/arm_perception/perception_ws/src/sam_ros2/scripts/sam_api_bridge.py \
+    /root/arm_perception/perception_ws/src/sam_ros2/scripts/sam_api_bridge.py
+COPY --from=model_assets \
+    /root/arm_perception/models /root/arm_perception/models
 
 COPY --chmod=0755 <<'ENTRYPOINT' /usr/local/bin/ros_entrypoint.sh
 #!/usr/bin/env bash
@@ -445,14 +415,12 @@ fi
 exec "$@"
 ENTRYPOINT
 
-ENV HOME=/home/perception \
-    XDG_CACHE_HOME=/home/perception/.cache \
-    MPLCONFIGDIR=/home/perception/.config/matplotlib
+ENV XDG_CACHE_HOME=/root/.cache \
+    MPLCONFIGDIR=/root/.config/matplotlib
 
 EXPOSE 5001
 
-USER ${APP_UID}:${APP_GID}
-WORKDIR /opt/arm_perception/ws
+WORKDIR /root/arm_perception/perception_ws
 
 ENTRYPOINT ["/usr/local/bin/ros_entrypoint.sh"]
 CMD ["bash"]

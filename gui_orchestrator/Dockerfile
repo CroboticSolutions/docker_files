@@ -133,17 +133,18 @@ RUN git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2_msg
 # examples/server/server_ros.py added (bridges a ROS Image/CompressedImage
 # topic to a WebRTC video track). Private repo, cloned over SSH like
 # ros2_dash_gui. Not a colcon package (no package.xml) and not related to the
-# /root/arms_ws ROS workspace, so it lives under /opt instead.
-RUN --mount=type=ssh git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git /opt/aiortc_webrtc_ros
+# /root/arms_ws ROS workspace, so it lives in its own directory under /root
+# instead.
+RUN --mount=type=ssh git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git /root/aiortc_webrtc_ros
 
 # aiohttp isn't declared in aiortc_webrtc_ros's own pyproject.toml (only
 # under its `dev` extra, meant for developing aiortc itself) but
-# examples/server/server_ros.py needs it directly. `pip install /opt/...`
+# examples/server/server_ros.py needs it directly. `pip install /root/...`
 # installs the aiortc package itself (aioice/av/cryptography/pyee/etc, per
 # that pyproject.toml's `dependencies`).
 RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed \
       aiohttp \
-      /opt/aiortc_webrtc_ros
+      /root/aiortc_webrtc_ros
 
 WORKDIR /root/arms_ws
 
@@ -178,7 +179,7 @@ RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
 # Private repo, cloned over SSH like ros2_dash_gui/aiortc_webrtc_ros above --
 # no local checkout needed as build context anymore.
 
-WORKDIR /opt/demomotion_gui
+WORKDIR /root/demomotion_gui
 
 RUN --mount=type=ssh git clone -b ${DEMOMOTION_GUI_BRANCH} \
       git@github.com:CroboticSolutions/demomotion_gui.git .

@@ -27,8 +27,6 @@ FROM ubuntu:noble
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG ROS2_DISTRO=jazzy
-ARG ROS2_DASH_GUI_BRANCH=mstigla/devel
-ARG DEMOMOTION_GUI_BRANCH=merge/main-into-mstigla-compose-devel
 ARG NODE_MAJOR=24
 
 ENV HOME=/root \
@@ -117,7 +115,7 @@ RUN mkdir -p -m 0700 /root/.ssh && \
     ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> /root/.ssh/known_hosts
 
 WORKDIR /root/arms_ws/src
-RUN --mount=type=ssh git clone -b ${ROS2_DASH_GUI_BRANCH} \
+RUN --mount=type=ssh git clone -b mstigla/devel \
       git@github.com:CroboticSolutions/ros2_dash_gui.git
 
 # arm_api2_msgs -- bridge.py imports these message types by name to
@@ -181,7 +179,7 @@ RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
 
 WORKDIR /root/demomotion_gui
 
-RUN --mount=type=ssh git clone -b ${DEMOMOTION_GUI_BRANCH} \
+RUN --mount=type=ssh git clone -b merge/main-into-mstigla-compose-devel \
       git@github.com:CroboticSolutions/demomotion_gui.git .
 
 RUN npm install --legacy-peer-deps

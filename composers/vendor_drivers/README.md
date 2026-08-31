@@ -82,9 +82,14 @@ For `up`, the script does the same reuse/pull-first check
 `_ensure_containers_up` does in `main.py`, rather than a plain
 `docker compose up -d` passthrough: a container already running under its
 expected name (see the table above) is left alone -- no recreate, so no
-"name already in use" conflict -- and only a genuinely missing one gets its
-image pulled from Docker Hub and retagged locally, falling back to
-`docker compose build` only if there's no Hub image for it or the pull
+"name already in use" conflict. One that exists but is stopped (e.g. after a
+host reboot or a Docker daemon restart -- `docker ps` alone won't see it,
+only `docker ps -a` does) gets a plain `docker start` instead, for the same
+reason -- routing an existing-but-stopped container through
+`docker compose up -d` would try to *create* a second container under that
+name and hit the identical conflict. Only a container that doesn't exist at
+all gets its image pulled from Docker Hub and retagged locally, falling back
+to `docker compose build` only if there's no Hub image for it or the pull
 fails. Any other subcommand (`build`, `ps`, `down`, ...) still passes
 straight through to `docker compose`.
 

@@ -34,22 +34,26 @@ declare -A HUB_IMAGE=(
 )
 
 # Dev-friendly `up`: a container already running under its expected name is
-# left alone (no recreate, so no "name already in use" conflict); a missing
-# one gets its image pulled from Docker Hub and retagged instead of built
-# locally, falling back to `docker compose build` only if there's no Hub
-# image or the pull fails. Same order launch_server/main.py's
-# `_ensure_containers_up` already uses for the wizard's auto-start, so manual
-# runs behave the same way.
+# left alone (no recreate, so no "name already in use" conflict); one that
+# exists but is stopped gets a plain `docker start` instead of being routed
+# through `docker compose up -d` (which would try to *create* a container
+# under that name and get a conflict, since this container isn't tracked by
+# compose); only a container that doesn't exist at all gets its image pulled
+# from Docker Hub and retagged, falling back to `docker compose build` only
+# if there's no Hub image or the pull fails. Same order launch_server/
+# main.py's `_ensure_containers_up` already uses for the wizard's
+# auto-start, so manual runs behave the same way.
 smart_up() {
   local services=("$@")
   if [ ${#services[@]} -eq 0 ]; then
     services=("${!CONTAINER_NAME[@]}")
   fi
 
-  local running
+  local running existing
   running="$(docker ps --format '{{.Names}}')"
+  existing="$(docker ps -a --format '{{.Names}}')"
 
-  local missing=()
+  local not_running=()
   local svc name
   for svc in "${services[@]}"; do
     name="${CONTAINER_NAME[$svc]:-}"
@@ -60,12 +64,32 @@ smart_up() {
     if grep -qx "$name" <<<"$running"; then
       echo "== $name already running, leaving it as-is =="
     else
+      not_running+=("$svc")
+    fi
+  done
+
+  if [ ${#not_running[@]} -eq 0 ]; then
+    echo "Nothing to start -- all requested containers already running."
+    return
+  fi
+
+  local stopped=()
+  local missing=()
+  for svc in "${not_running[@]}"; do
+    name="${CONTAINER_NAME[$svc]}"
+    if grep -qx "$name" <<<"$existing"; then
+      stopped+=("$name")
+    else
       missing+=("$svc")
     fi
   done
 
+  if [ ${#stopped[@]} -gt 0 ]; then
+    echo "== starting stopped containers: ${stopped[*]} =="
+    docker start "${stopped[@]}"
+  fi
+
   if [ ${#missing[@]} -eq 0 ]; then
-    echo "Nothing to start -- all requested containers already running."
     return
   fi
 

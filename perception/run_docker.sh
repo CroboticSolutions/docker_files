@@ -3,8 +3,8 @@ set -euo pipefail
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
-image_name=${IMAGE_NAME:-arm-api2-perception:jazzy}
-container_name=${CONTAINER_NAME:-arm-api2-perception}
+image_name=perception_img:jazzy
+container_name=perception_cont
 download_models=${DOWNLOAD_MODELS:-1}
 ros_domain_id=${ROS_DOMAIN_ID:-0}
 
@@ -85,7 +85,8 @@ fi
 
 docker_args=(
     run
-    --rm
+    -d
+    -it
     --name "${container_name}"
     --gpus all
     --network host
@@ -93,10 +94,6 @@ docker_args=(
     --env "ROS_DOMAIN_ID=${ros_domain_id}"
     --env "PYNPUT_BACKEND=${PYNPUT_BACKEND:-dummy}"
 )
-
-if [[ -t 0 && -t 1 ]]; then
-    docker_args+=(-it)
-fi
 
 if [[ -n "${DISPLAY:-}" && -d /tmp/.X11-unix ]]; then
     docker_args+=(

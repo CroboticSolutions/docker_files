@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=piper_driver
-IMAGE_NAME=piper_driver:latest
+CONTAINER_NAME=piper_driver_cont
+IMAGE_NAME=piper_driver_img:jazzy
 
 # Grant the container's X11 access up front so RViz (spawned by the MoveIt
 # launch files run inside this container) can always open a window without
@@ -15,7 +15,6 @@ xhost +si:localuser:root >/dev/null 2>&1 || true
 # Drop --privileged/-v /dev:/dev for simulation-only use.
 docker run \
   -it \
-  --rm \
   --network host \
   --privileged \
   -v /dev:/dev \

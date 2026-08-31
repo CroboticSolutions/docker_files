@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=fanuc_driver
-IMAGE_NAME=fanuc_driver:latest
+CONTAINER_NAME=fanuc_driver_cont
+IMAGE_NAME=fanuc_driver_img:jazzy
 
 docker run \
   -it \

@@ -144,7 +144,7 @@ dead component), but it means:
   `launch_server/main.py`), so a second launch attempt for a step that's
   still alive fails immediately instead of duplicating. The lock file lives
   inside the *driver* container the step runs in (e.g.
-  `/tmp/arm_api2_gui_launch_arm_api2.lock` in `arm_api2_cont_jazzy`), not in
+  `/tmp/arm_api2_gui_launch_arm_api2.lock` in `arm_api2_cont`), not in
   this container, so it survives a `gui_orchestrator` restart even though
   `launch_server`'s own memory doesn't. Still worth doing one manual
   `/hardware/stop` + `/hardware/launch` cycle (or the wizard's stop/relaunch

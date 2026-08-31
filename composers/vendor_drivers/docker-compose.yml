@@ -20,7 +20,7 @@ services:
       context: ../../vendor_split/arm_api2
       dockerfile: Dockerfile
     image: arm_api2_img:jazzy
-    container_name: arm_api2_cont_jazzy
+    container_name: arm_api2_cont
     stdin_open: true
     tty: true
     network_mode: host

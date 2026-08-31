@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=ur_driver
-IMAGE_NAME=ur_driver:latest
+CONTAINER_NAME=ur_driver_cont
+IMAGE_NAME=ur_driver_img:jazzy
 
 docker run \
   -it \

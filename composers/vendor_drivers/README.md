@@ -68,16 +68,25 @@ build` if that pull fails. To start one manually:
 ./docker-compose-up.sh -f docker-compose.yml up -d arm_api2 piper_driver realsense
 ```
 
-`docker-compose-up.sh` is a thin wrapper (same pattern as
-`../demomotion/docker-compose-up.sh`) that runs `xhost +si:localuser:root`
-before `docker compose "$@"`, so RViz (launched inside `piper_driver_cont` by
-the MoveIt launch files) can actually open a window -- `DISPLAY` and
-`/tmp/.X11-unix` are already mounted into these containers below, but nothing
-authorizes them against the host's X server otherwise. **Note:**
-`hardware_stacks.py` currently calls `docker compose` directly, not this
-wrapper, so the wizard's auto-start path still needs either that script
-pointed at this wrapper or an equivalent `xhost` grant done once per login on
-the host (e.g. in `~/.xprofile`) to get the same effect.
+`docker-compose-up.sh` runs `xhost +si:localuser:root` before handling the
+command, so RViz (launched inside `piper_driver_cont` by the MoveIt launch
+files) can actually open a window -- `DISPLAY` and `/tmp/.X11-unix` are
+already mounted into these containers below, but nothing authorizes them
+against the host's X server otherwise. **Note:** `hardware_stacks.py`
+currently calls `docker compose` directly, not this wrapper, so the wizard's
+auto-start path still needs either that script pointed at this wrapper or an
+equivalent `xhost` grant done once per login on the host (e.g. in
+`~/.xprofile`) to get the same effect.
+
+For `up`, the script does the same reuse/pull-first check
+`_ensure_containers_up` does in `main.py`, rather than a plain
+`docker compose up -d` passthrough: a container already running under its
+expected name (see the table above) is left alone -- no recreate, so no
+"name already in use" conflict -- and only a genuinely missing one gets its
+image pulled from Docker Hub and retagged locally, falling back to
+`docker compose build` only if there's no Hub image for it or the pull
+fails. Any other subcommand (`build`, `ps`, `down`, ...) still passes
+straight through to `docker compose`.
 
 Containers are meant to stay up (idle `bash`) between wizard launches --
 `hardware_stacks.py` only starts/stops the `ros2 launch` process trees

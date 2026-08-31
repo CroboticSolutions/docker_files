@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONTAINER_NAME=gui_orchestrator_dockerfile_test
-IMAGE_NAME=gui_orchestrator_image:jazzy
+CONTAINER_NAME=gui_orchestrator_cont
+IMAGE_NAME=gui_orchestrator_img:jazzy
 
 # docker_files must be bind-mounted at the SAME absolute path it lives at on
 # the host: launch_server's wizard drives docker compose/exec through the

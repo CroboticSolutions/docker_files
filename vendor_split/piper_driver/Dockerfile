@@ -86,8 +86,17 @@ RUN git clone -b apirsic/devel2 https://github.com/CroboticSolutions/piper_ros.g
 
 WORKDIR /root/piper_ws
 
+# rosdep init writes /etc/ros/rosdep/sources.list.d/20-default.list pointing every
+# source at .../rosdistro/master/..., and GitHub's raw-content edge has been
+# returning a hard "400: Bad Request" specifically for the master-branch-alias
+# request to rosdep/base.yaml (other files under the same master ref, and base.yaml
+# itself fetched by a pinned commit SHA, both resolve fine) -- so re-point that file
+# at the current master commit SHA instead of the branch alias before updating.
 RUN apt-get update && \
     rosdep init || true && \
+    ROSDISTRO_SHA=$(curl -sS https://api.github.com/repos/ros/rosdistro/commits/master | grep -m1 '"sha"' | sed -E 's/.*"sha": *"([a-f0-9]+)".*/\1/') && \
+    [ -n "$ROSDISTRO_SHA" ] && \
+    sed -i "s#/rosdistro/master/#/rosdistro/${ROSDISTRO_SHA}/#g" /etc/ros/rosdep/sources.list.d/20-default.list && \
     rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y && \
     rm -rf /var/lib/apt/lists/*

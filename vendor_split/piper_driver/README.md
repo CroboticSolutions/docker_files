@@ -36,6 +36,19 @@ into the `Dockerfile`.
 docker build -t piper_driver:latest .
 ```
 
+## Troubleshooting
+
+(31.8.)
+**`rosdep update` fails with `HTTP Error 400: Bad Request` fetching
+`rosdep/base.yaml`:** this is an upstream GitHub raw-content edge issue, not
+this Dockerfile — the same file resolves fine when fetched by a pinned commit
+SHA, so the `RUN` step that calls `rosdep init`/`rosdep update` already
+resolves the current `rosdistro` `master` SHA via the GitHub API and
+re-points `/etc/ros/rosdep/sources.list.d/20-default.list` at that SHA before
+updating, working around the broken branch-alias resolution. If it still
+fails, GitHub's `api.github.com` may itself be rate-limited/unreachable from
+your network — retry, or check https://www.githubstatus.com/.
+
 ## Run
 
 **Simulation** — no special flags beyond the usual:

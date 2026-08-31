@@ -46,7 +46,7 @@ fi
 ros2 launch ros2_dash_gui bridge_piper.launch.py "${launch_args[@]}" &
 pids+=("$!")
 
-cd /root/demomotion_gui/launch_server
+cd /root/arms_ws/src/demomotion_gui/launch_server
 uvicorn main:app --host "${LAUNCH_SERVER_HOST}" --port "${LAUNCH_SERVER_PORT}" --workers 1 &
 pids+=("$!")
 
@@ -55,10 +55,10 @@ pids+=("$!")
 # server_ros.py process since the aiortc/rclpy globals in that script are
 # module-level, not designed to serve more than one video track per process.
 ROS_IMAGE_TOPIC="${WEBRTC_RAW_IMAGE_TOPIC}" \
-    python3 /root/aiortc_webrtc_ros/examples/server/server_ros.py --port "${WEBRTC_RAW_PORT}" &
+    python3 /root/arms_ws/src/aiortc_webrtc_ros/examples/server/server_ros.py --port "${WEBRTC_RAW_PORT}" &
 pids+=("$!")
 ROS_IMAGE_TOPIC="${WEBRTC_ANNOTATED_IMAGE_TOPIC}" \
-    python3 /root/aiortc_webrtc_ros/examples/server/server_ros.py --port "${WEBRTC_ANNOTATED_PORT}" &
+    python3 /root/arms_ws/src/aiortc_webrtc_ros/examples/server/server_ros.py --port "${WEBRTC_ANNOTATED_PORT}" &
 pids+=("$!")
 
 # Exit as soon as either process dies, taking the other down with it.

@@ -45,10 +45,11 @@ DOCKER_BUILDKIT=1 docker build --ssh default \
   /home/martin/Crobotics/docker_files/gui_orchestrator
 ```
 
-`ROS2_DASH_GUI_BRANCH` (default `mstigla/devel`) and
-`DEMOMOTION_GUI_BRANCH` (default `merge/main-into-mstigla-compose-devel`)
-are build args if you need a different branch, e.g. `--build-arg
-DEMOMOTION_GUI_BRANCH=main`.
+The `ros2_dash_gui` (`mstigla/devel`), `arm_api2_msgs` (`apirsic/devel`), and
+`demomotion_gui` (`merge/main-into-mstigla-compose-devel`) branches are
+hardcoded directly in the `RUN git clone -b ...` lines, not build args --
+edit the Dockerfile itself to point at a different branch, then rebuild
+(`aiortc_webrtc_ros` has no branch pin, it just clones the repo's default).
 
 ## Run
 
@@ -120,14 +121,16 @@ dead component), but it means:
   deletes the container instead of leaving something to `docker start`/
   `docker logs` after the fact.
 - A container restart **does not pick up source changes** -- `demomotion_gui`
-  (frontend + `launch_server`), `ros2_dash_gui`, and `aiortc_webrtc_ros` are
-  all `git clone`'d at *build* time, not bind-mounted. You need a
-  `docker build` first. Note also that a plain rebuild can reuse Docker's
-  cached layer for a `git clone` step even after new commits land on that
-  repo's branch, since the `RUN git clone ...` command text itself hasn't
-  changed -- if you only changed something in one of those repos (not this
-  Dockerfile), rebuild with `--no-cache` or you'll silently get the old
-  code.
+  (frontend + `launch_server`), `ros2_dash_gui`, `arm_api2_msgs`, and
+  `aiortc_webrtc_ros` are all `git clone`'d at *build* time into
+  `/root/arms_ws/src/<repo>` (one root for everything this image clones, even
+  though `demomotion_gui`/`aiortc_webrtc_ros` aren't colcon packages and
+  `colcon build` skips them), not bind-mounted. You need a `docker build`
+  first. Note also that a plain rebuild can reuse Docker's cached layer for a
+  `git clone` step even after new commits land on that repo's branch, since
+  the `RUN git clone ...` command text itself hasn't changed -- if you only
+  changed something in one of those repos (not this Dockerfile), rebuild with
+  `--no-cache` or you'll silently get the old code.
 - `launch_server`'s hardware-stack bookkeeping (`/status`'s
   `hardware_running`/`hardware_stack_id`) lives in this process's own
   memory. Restarting this container does **not** stop the real robot

@@ -130,19 +130,20 @@ RUN git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2_msg
 # aiortc_webrtc_ros -- CroboticSolutions' fork of aiortc with
 # examples/server/server_ros.py added (bridges a ROS Image/CompressedImage
 # topic to a WebRTC video track). Private repo, cloned over SSH like
-# ros2_dash_gui. Not a colcon package (no package.xml) and not related to the
-# /root/arms_ws ROS workspace, so it lives in its own directory under /root
-# instead.
-RUN --mount=type=ssh git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git /root/aiortc_webrtc_ros
+# ros2_dash_gui. Not a colcon package (no package.xml), so colcon build below
+# skips it, but it lives under arms_ws/src anyway to keep every repo this
+# image clones under one root instead of scattered across /root.
+RUN --mount=type=ssh git clone git@github.com:CroboticSolutions/aiortc_webrtc_ros.git \
+      /root/arms_ws/src/aiortc_webrtc_ros
 
 # aiohttp isn't declared in aiortc_webrtc_ros's own pyproject.toml (only
 # under its `dev` extra, meant for developing aiortc itself) but
-# examples/server/server_ros.py needs it directly. `pip install /root/...`
+# examples/server/server_ros.py needs it directly. `pip install .../...`
 # installs the aiortc package itself (aioice/av/cryptography/pyee/etc, per
 # that pyproject.toml's `dependencies`).
 RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed \
       aiohttp \
-      /root/aiortc_webrtc_ros
+      /root/arms_ws/src/aiortc_webrtc_ros
 
 WORKDIR /root/arms_ws
 
@@ -175,9 +176,11 @@ RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
 
 # --- demomotion_gui: frontend (built, served by launch_server) + backend ---
 # Private repo, cloned over SSH like ros2_dash_gui/aiortc_webrtc_ros above --
-# no local checkout needed as build context anymore.
+# no local checkout needed as build context anymore. Not a colcon package
+# either (npm frontend + FastAPI backend, no package.xml), but lives under
+# arms_ws/src for the same one-root-for-everything reason as aiortc_webrtc_ros.
 
-WORKDIR /root/demomotion_gui
+WORKDIR /root/arms_ws/src/demomotion_gui
 
 RUN --mount=type=ssh git clone -b merge/main-into-mstigla-compose-devel \
       git@github.com:CroboticSolutions/demomotion_gui.git .

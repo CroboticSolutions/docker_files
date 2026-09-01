@@ -19,8 +19,8 @@ build/run/launch instructions specific to that vendor.
 
 | Image | Built | Pushed to Docker Hub | Wired into the GUI's real launch path |
 |---|---|---|---|
-| `arm_api2` | yes | `croboticsolutions/arm_api2:jazzy` | yes (Piper real profiles) |
-| `piper_driver` | yes | `croboticsolutions/piper_driver:jazzy` | yes (Piper real profiles) |
+| `arm_api2` | yes | `croboticsolutions/arm_api2_img:jazzy` | yes (Piper real profiles) |
+| `piper_driver` | yes | `croboticsolutions/piper_driver_img:jazzy` | yes (Piper real profiles) |
 | `ur_driver` | no | no | no |
 | `fanuc_driver` | no | no | no |
 | `abb_driver` | n/a -- scaffold only | n/a | n/a |

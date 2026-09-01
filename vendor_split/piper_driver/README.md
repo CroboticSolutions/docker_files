@@ -84,7 +84,7 @@ load the Qt platform plugin "xcb"`. The `xhost +si:localuser:root` grant is
 scoped to local root processes (this container runs as root) rather than the
 wider `xhost +local:docker`/`xhost +`.
 
-Pushed to Docker Hub as `croboticsolutions/piper_driver:jazzy`.
+Pushed to Docker Hub as `croboticsolutions/piper_driver_img:jazzy`.
 `demomotion_gui`'s `launch_server` uses this container directly as the real
 launch path for the wizard's two real Piper profiles (RealSense D435 and
 OAK-D Pro W) -- CAN activation, `piper` driver, MoveIt, and gripper

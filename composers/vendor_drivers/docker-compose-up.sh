@@ -27,10 +27,10 @@ declare -A CONTAINER_NAME=(
 # demomotion_gui/launch_server/hardware_stacks.py -- ur_driver/fanuc_driver
 # have no Hub image yet, so they always fall back to a local build).
 declare -A HUB_IMAGE=(
-  [arm_api2]="croboticsolutions/arm_api2:jazzy arm_api2_img:jazzy"
-  [piper_driver]="croboticsolutions/piper_driver:jazzy piper_driver_img:jazzy"
+  [arm_api2]="croboticsolutions/arm_api2_img:jazzy arm_api2_img:jazzy"
+  [piper_driver]="croboticsolutions/piper_driver_img:jazzy piper_driver_img:jazzy"
   [realsense]="croboticsolutions/realsense_img:jazzy realsense_img:jazzy"
-  [perception]="croboticsolutions/perception:jazzy perception_img:jazzy"
+  [perception]="croboticsolutions/perception_img:jazzy perception_img:jazzy"
 )
 
 # Dev-friendly `up`: a container already running under its expected name is

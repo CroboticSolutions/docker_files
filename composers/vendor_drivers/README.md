@@ -15,7 +15,7 @@ Services:
 - **arm_api2** -- [`../../vendor_split/arm_api2`](../../vendor_split/arm_api2) (vendor-agnostic MoveIt interface, Jazzy)
 - **piper_driver** -- [`../../vendor_split/piper_driver`](../../vendor_split/piper_driver) (AgileX Piper CAN driver + Gazebo + MoveIt)
 - **realsense** -- [`../../realsense`](../../realsense) (Intel RealSense D400 series; used by the PiPER + RealSense D435 wizard profile so the camera launch runs in-container like `piper_driver`/`arm_api2`, instead of needing ROS sourced on the host)
-- **perception** -- this service still runs `croboticsolutions/perception:jazzy`
+- **perception** -- this service still runs `croboticsolutions/perception_img:jazzy`
   from Docker Hub (see Build below) -- HaMeR/WiLoR hand-pose + SAM for the
   WELDING application's `mp_wrapper_ros` nodes and the
   `/teleop/start-hand-servo` endpoint. `docker exec`'d into from
@@ -102,10 +102,10 @@ containers themselves.
 
 | Image | Tag |
 |---|---|
-| `arm_api2` | `croboticsolutions/arm_api2:jazzy` |
-| `piper_driver` | `croboticsolutions/piper_driver:jazzy` |
+| `arm_api2` | `croboticsolutions/arm_api2_img:jazzy` |
+| `piper_driver` | `croboticsolutions/piper_driver_img:jazzy` |
 | `realsense` | `croboticsolutions/realsense_img:jazzy` |
-| `perception` | `croboticsolutions/perception:jazzy` |
+| `perception` | `croboticsolutions/perception_img:jazzy` |
 
 Note: `croboticsolutions/arm_api2:humble` is a **different, older** image
 (the combined dev-container-style build) -- this split, Jazzy-only

@@ -38,7 +38,7 @@ docker run -it --rm \
 
 or `bash run_docker.sh` (same command, kept in sync with this README).
 
-Pushed to Docker Hub as `croboticsolutions/arm_api2:jazzy` -- distinct from
+Pushed to Docker Hub as `croboticsolutions/arm_api2_img:jazzy` -- distinct from
 the older, unrelated `croboticsolutions/arm_api2:humble` combined-container
 build. `demomotion_gui`'s `launch_server` pulls this tag automatically
 (via `docker_files/composers/vendor_drivers`) if the local

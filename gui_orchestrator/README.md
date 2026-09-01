@@ -88,6 +88,15 @@ Frontend + wizard: `http://localhost:8080`. Bridge websocket:
 build-time defaults, so no frontend rebuild is needed unless those were
 overridden.
 
+**Container pull/build progress:** `_ensure_containers_up`'s `docker
+pull`/`compose build`/`compose up -d` calls (run when a hardware profile's
+vendor container isn't up yet) stream their output live into an in-memory
+ring buffer instead of running fully captured, so a slow Hub pull isn't
+silent. Exposed at `GET /status` as `container_setup: { lines, active }`;
+the setup wizard's confirm step and `LaunchStatusPanel` both render it as a
+collapsible terminal (`ContainerSetupTerminal` in
+`src/pages/world-setup/LaunchStatusPanel.tsx`).
+
 Every real-Piper hardware profile also ends with a `set_cartesian_default`
 step (`hardware_stacks.py`'s `_cartesian_default_step`) a few seconds after
 `arm_api2` comes up: it calls `/arm/change_state` with `CART_TRAJ_CTL`, the

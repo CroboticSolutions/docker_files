@@ -2,6 +2,39 @@ FROM ubuntu:jammy AS ros2_base
 
 # Builds depthai-ros (humble branch, v2.12.2) for an OAK-D SR camera.
 # See README.md in this folder for build/run instructions and topic reference.
+#
+# Builds for linux/amd64 and linux/arm64. Everything apt-installed below (including
+# ros-humble-desktop-full and ros-humble-ffmpeg-image-transport-msgs) is published for
+# both arches on packages.ros.org/ros2/ubuntu jammy, and depthai-core is source-built
+# here, so nothing needs substituting per-arch -- but see BUILD_JOBS/ROS_METAPACKAGE
+# below before cross-building under QEMU, and README.md's "Cross-building for arm64".
+
+# Set automatically by BuildKit/buildx from --platform (amd64, arm64, ...). Empty under
+# the legacy (non-buildx) builder, in which case the build is native.
+ARG TARGETARCH
+
+# depthai-core is a large C++ source build and is the memory bottleneck of this image,
+# which is why the colcon step below is pinned to one package at a time with a capped
+# MAKEFLAGS rather than the usual $(nproc). Under QEMU every compiler job also carries a
+# qemu-aarch64 process, so leave this at 2 (or drop it to 1) for an arm64 cross-build;
+# raise it only for a native build on a machine with RAM to spare.
+ARG BUILD_JOBS=2
+
+# desktop-full pulls the full Gazebo/perception stack, which this driver container does
+# not use and which roughly triples both the download and the emulated install time.
+# Kept as the default so the amd64 image is unchanged; the arm64 branch can pass
+# --build-arg ROS_METAPACKAGE=ros-humble-ros-base (or ros-humble-desktop if RViz is
+# wanted in-container) instead.
+ARG ROS_METAPACKAGE=ros-humble-desktop-full
+
+# Fail in seconds rather than deep into the build: packages.ros.org publishes ROS 2 debs
+# for amd64 and arm64 only. A linux/arm/v7 or riscv64 build otherwise gets through the
+# base apt layers and then dies inside `apt-get install ros-humble-*` with a bare
+# "Unable to locate package", which reads like a mirror outage, not a wrong --platform.
+RUN if [ -n "${TARGETARCH}" ] && [ "${TARGETARCH}" != "amd64" ] && [ "${TARGETARCH}" != "arm64" ]; then \
+        echo "ERROR: unsupported target architecture '${TARGETARCH}' -- packages.ros.org ships ROS 2 humble debs for amd64 and arm64 only." >&2; \
+        exit 1; \
+    fi
 
 # Setup environment
 ENV HOME=/root
@@ -40,8 +73,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt-get update
 
 # Install ROS2
-RUN apt-get install -y \
-    ros-${ROS2_DISTRO}-desktop-full
+RUN apt-get install -y ${ROS_METAPACKAGE}
 
 # Install ROS2 tools
 RUN apt-get install -y \
@@ -98,7 +130,7 @@ RUN . /opt/ros/${ROS2_DISTRO}/setup.sh && \
 RUN pip3 install catkin_pkg empy==3.3.4 lark
 
 RUN . /opt/ros/${ROS2_DISTRO}/setup.sh && \
-    MAKEFLAGS="-j2" colcon build --symlink-install \
+    MAKEFLAGS="-j${BUILD_JOBS}" colcon build --symlink-install \
       --parallel-workers 1 \
       --packages-skip depthai_examples \
       --cmake-args -DCMAKE_BUILD_TYPE=Release

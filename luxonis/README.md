@@ -19,6 +19,49 @@ containers have no udev daemon of their own.
 docker build -t ros2_oak_sr:humble .
 ```
 
+### Build arguments
+
+| Argument | Default | Description |
+|----------|---------|--------------|
+| `BUILD_JOBS` | `2` | `MAKEFLAGS -j` cap for the depthai-core colcon build — the memory bottleneck of this image |
+| `ROS_METAPACKAGE` | `ros-humble-desktop-full` | Set to `ros-humble-ros-base` for a much smaller/faster driver-only image |
+| `TARGETARCH` | *(set by buildx)* | Not passed by hand; the build aborts early on anything but `amd64`/`arm64` |
+
+### Cross-building for arm64
+
+Nothing here is amd64-only — `ros-humble-desktop-full`, `ros-humble-rmw-cyclonedds-cpp`
+and `ros-humble-ffmpeg-image-transport-msgs` are all published for `arm64` on
+`packages.ros.org/ros2/ubuntu jammy`, and depthai-core is source-built either way.
+
+One-time host setup for emulated cross-builds:
+
+```bash
+docker buildx create --use --name multiarch
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+Then:
+
+```bash
+docker buildx build --platform linux/arm64 \
+  --build-arg ROS_METAPACKAGE=ros-humble-ros-base \
+  --build-arg BUILD_JOBS=2 \
+  -t croboticsolutions/oak_img:humble-arm64 --load .
+```
+
+`ROS_METAPACKAGE=ros-humble-ros-base` is worth passing for an emulated build: this is a
+driver container and never uses `desktop-full`'s Gazebo/perception stack, which roughly
+triples both the download and the (emulated, therefore slow) install. Anything
+depthai-ros actually needs is pulled in by the `rosdep install` step regardless. Use
+`ros-humble-desktop` instead if you want RViz available inside the container.
+
+Keep `BUILD_JOBS` at `2` or lower — depthai-core is a large C++ build and each emulated
+compile job carries its own `qemu-aarch64` process. Building natively on the ARM host
+(plain `docker build`, no `--platform`) is considerably faster if one is available.
+
+`--load` only accepts a single platform; use `--platform linux/amd64,linux/arm64 --push`
+to publish a manifest list covering both.
+
 ## 3. Run
 
 Either standalone:

@@ -17,6 +17,8 @@ packages (opt-in, faster, but **known broken for `align_depth`** — see below).
 | `BUILD_FROM_SOURCE` | `yes` | `no` falls back to the apt packages instead — see the align_depth warning below before using this |
 | `REALSENSE_LIB_TAG` | `v2.58.2` | `librealsense` git tag to build (source path only) |
 | `REALSENSE_CAMERA_TAG` | `4.58.2` | `realsense-ros` git tag to build (source path only) |
+| `BUILD_JOBS` | *(empty = `$(nproc)`)* | Caps compiler parallelism of both source builds — set it for arm64 cross-builds, see below |
+| `TARGETARCH` | *(set by buildx)* | Not passed by hand; the build aborts early on anything but `amd64`/`arm64` |
 
 **Why source-built and pinned to these exact tags:** every apt-available pairing has a
 silent `align_depth` bug — the Depth Module opens fine and raw depth publishes, but
@@ -64,6 +66,40 @@ docker build --build-arg ROS_DISTRO=humble --build-arg UBUNTU_RELEASE=jammy -t r
 # Apt packages instead (fast, but NOT align_depth-safe -- see warning above)
 docker build --build-arg BUILD_FROM_SOURCE=no -t realsense_img:jazzy-apt .
 ```
+
+### Cross-building for arm64
+
+Nothing in this image is amd64-only: every `ros-jazzy-*` deb it installs is published for
+`arm64` on `packages.ros.org` (noble and jammy alike), and `librealsense2` is source-built
+here anyway — with `FORCE_RSUSB_BACKEND=true`, which selects librealsense's userspace
+libusb backend over the V4L2 one and so needs no patched `uvcvideo` on the host. That is
+what makes an ARM host (Jetson, Raspberry Pi, Ampere) viable at all; the patched-kernel
+path from librealsense's own install docs is a non-starter there.
+
+One-time host setup for emulated cross-builds:
+
+```bash
+docker buildx create --use --name multiarch
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+Then:
+
+```bash
+docker buildx build --platform linux/arm64 \
+  --build-arg BUILD_JOBS=4 \
+  -t croboticsolutions/realsense_img:jazzy-arm64 --load .
+```
+
+**Pass `BUILD_JOBS`.** The default is `$(nproc)`, which is correct natively but wrong
+under QEMU: each emulated compile job carries its own `qemu-aarch64` process, so an
+unbounded `$(nproc)` on a many-core x86 host reliably OOMs the builder part-way through
+librealsense2. `4` is a reasonable starting point. Expect the emulated build to take
+several times longer than the native one — building natively on the ARM host itself
+(plain `docker build`, no `--platform`) is faster if you have one to hand.
+
+`--load` only accepts a single platform. To build both arches at once, push a manifest
+list instead: `--platform linux/amd64,linux/arm64 --push`.
 
 ## Troubleshooting 
 

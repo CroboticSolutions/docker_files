@@ -7,6 +7,31 @@ FROM ubuntu:${UBUNTU_RELEASE} AS realsense_base
 
 ARG ROS_DISTRO=jazzy
 
+# Set automatically by BuildKit/buildx from --platform (amd64, arm64, ...). Re-declared
+# inside the stage so the RUN lines below can branch on it; it is empty on a plain
+# `docker build` with the legacy builder, which is treated as "native, whatever that is".
+ARG TARGETARCH
+
+# Cap the compiler parallelism of the two source builds below (librealsense2 via make,
+# realsense-ros via colcon). Leaving it empty is a no-op -- librealsense2 gets the usual
+# make -j$(nproc) and colcon its usual package-level parallelism, i.e. exactly the native
+# behaviour this file has always had. Set it when cross-building for arm64 under QEMU on
+# a many-core x86 host: each emulated compile job carries its own qemu-aarch64 process,
+# so an unbounded $(nproc) (and colcon's nproc-wide package parallelism on top of it)
+# reliably OOMs the builder part-way through librealsense2. Typical value: BUILD_JOBS=4.
+ARG BUILD_JOBS=""
+
+# Fail in seconds rather than 40 minutes in: packages.ros.org publishes ROS 2 debs for
+# amd64 and arm64 only. A `--platform linux/arm/v7` (or riscv64) build gets all the way
+# through the base apt layers and then dies inside `apt-get install ros-${ROS_DISTRO}-*`
+# with a bare "Unable to locate package", which reads like a mirror outage rather than an
+# unsupported architecture. TARGETARCH is empty under the legacy (non-buildx) builder, in
+# which case the build is native and there is nothing to check.
+RUN if [ -n "${TARGETARCH}" ] && [ "${TARGETARCH}" != "amd64" ] && [ "${TARGETARCH}" != "arm64" ]; then \
+        echo "ERROR: unsupported target architecture '${TARGETARCH}' -- packages.ros.org ships ROS 2 ${ROS_DISTRO} debs for amd64 and arm64 only." >&2; \
+        exit 1; \
+    fi
+
 # Setup environment
 ENV HOME=/root
 ENV LANG=C.UTF-8
@@ -129,13 +154,19 @@ RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
 # setup_udev_rules.sh's own `sudo udevadm control --reload-rules && ... trigger` tail
 # reliably fails in a Docker build sandbox (no running udev/systemd daemon), so it's
 # `|| true`'d rather than let it silently abort the rest of this chain.
+#
+# FORCE_RSUSB_BACKEND=true is what makes this build arch-portable: it selects
+# librealsense's userspace libusb backend instead of the V4L2 one, so the image needs no
+# uvcvideo/hid kernel patches on the host. That matters most on arm64 (Jetson / RPi /
+# Ampere hosts), where the patched-kernel path from librealsense's install docs is a
+# non-starter -- and it costs nothing on amd64, which is why it was already set here.
 RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
         git clone --depth 1 --branch ${REALSENSE_LIB_TAG} https://github.com/IntelRealSense/librealsense.git /tmp/librealsense && \
         cd /tmp/librealsense && \
         (./scripts/setup_udev_rules.sh || true) && \
         mkdir build && cd build && \
         cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DFORCE_RSUSB_BACKEND=true && \
-        make -j$(nproc) && make install && ldconfig && \
+        make -j"${BUILD_JOBS:-$(nproc)}" && make install && ldconfig && \
         rm -rf /tmp/librealsense; \
     fi
 
@@ -153,13 +184,21 @@ RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
         rosdep update; \
     fi
 
+# --skip-keys librealsense2: realsense2_camera's package.xml <depend>s on
+# librealsense2, which rosdep resolves to ros-${ROS_DISTRO}-librealsense2 --
+# the broken apt package this Dockerfile source-builds around above. Without
+# the skip, rosdep silently apt-installs it alongside the source build,
+# putting two ABI-mismatched librealsense2.so.2 copies in the image and
+# reintroducing the exact crash this file exists to avoid.
 RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \
         mkdir -p ${REALSENSE_WS}/src && \
         git clone --depth 1 --branch ${REALSENSE_CAMERA_TAG} https://github.com/realsenseai/realsense-ros.git ${REALSENSE_WS}/src/realsense-ros && \
         bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
                  cd ${REALSENSE_WS} && \
-                 rosdep install --from-paths src --ignore-src -r -y && \
-                 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"; \
+                 rosdep install --from-paths src --ignore-src -r -y --skip-keys librealsense2 && \
+                 ${BUILD_JOBS:+MAKEFLAGS=-j}${BUILD_JOBS} \
+                 colcon build --symlink-install ${BUILD_JOBS:+--parallel-workers 1} \
+                   --cmake-args -DCMAKE_BUILD_TYPE=Release"; \
     fi
 
 RUN if [ "$BUILD_FROM_SOURCE" = "yes" ]; then \

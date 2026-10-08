@@ -114,3 +114,69 @@ services:
     environment:
       - TERM=xterm-256color
     command: /bin/bash
+
+  # No `build:` -- same as `perception` above, pulled straight from Docker Hub
+  # (croboticsolutions/oak_img:humble) and re-tagged locally (see
+  # launch_server/hardware_stacks.py CONTAINER_HUB_IMAGE). `privileged` +
+  # `/dev:/dev` for USB access to the physical OAK camera (Movidius VPU,
+  # vendor id 03e7 -- see docker_files/luxonis/install_udev_rules_host.sh
+  # for the host-side udev rule).
+  luxonis:
+    image: oak_img:humble
+    container_name: oak_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+    command: /bin/bash
+
+  # Plain USB/UVC webcam driver (ros2 usb_cam, CroboticSolutions fork,
+  # apirsic/devel branch) -- see ../../usb_cam/README.md. RGB only, no
+  # depth/pointcloud, unlike realsense/luxonis above. `privileged` +
+  # `/dev:/dev` for USB access to the webcam's /dev/videoN node(s) -- same
+  # pattern as realsense/luxonis; gui_orchestrator_cont itself needs none of
+  # this, it only needs its existing docker-socket mount to build/start this
+  # service and `docker exec` into it (see launch_server/hardware_stacks.py
+  # CONTAINER_COMPOSE_SERVICE).
+  usb_cam:
+    build:
+      context: ../../usb_cam
+      dockerfile: Dockerfile
+    image: usb_cam_img:jazzy
+    container_name: usb_cam_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+    command: /bin/bash
+
+  # Orbbec Femto Bolt ToF camera (OrbbecSDK_ROS2, CroboticSolutions fork,
+  # branch v2-main) -- see ../../orbbec/Dockerfile. Its git clone needs the
+  # GitHub SSH key forwarded, so build it from the host with
+  # `docker compose build --ssh default orbbec`. `privileged` + `/dev:/dev`
+  # for USB access, same pattern as realsense/luxonis/usb_cam.
+  orbbec:
+    build:
+      context: ../../orbbec
+      dockerfile: Dockerfile
+      ssh:
+        - default
+    image: orbbec_img:jazzy
+    container_name: orbbec_cont
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - TERM=xterm-256color
+    volumes:
+      - /dev:/dev
+    command: /bin/bash

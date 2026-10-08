@@ -80,9 +80,16 @@ RUN curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
 
 WORKDIR /root/piper_ws/src
 
-# Branch matches what is currently checked out under /root/arms_ws/src/piper_ros
-# in the combined dev container — update here if that container's branch moves on.
-RUN git clone -b apirsic/devel2 https://github.com/CroboticSolutions/piper_ros.git
+# Every CroboticSolutions repo's tested version lives on `main` (since 2026-10-05).
+RUN git clone -b main https://github.com/CroboticSolutions/piper_ros.git
+
+# piper_welding_gun.urdf.xacro with wrist_camera:=femto_bolt (the Femto Bolt
+# welding-gun profile) loads package://orbbec_description meshes, so MoveIt
+# here needs that package even though the driver itself runs in orbbec_cont.
+# Only the description is built: the driver packages are COLCON_IGNOREd, which
+# also keeps rosdep from pulling the Orbbec SDK's dependencies into this image.
+RUN git clone --depth 1 -b v2-main https://github.com/CroboticSolutions/OrbbecSDK_ROS2.git && \
+    touch OrbbecSDK_ROS2/orbbec_camera/COLCON_IGNORE OrbbecSDK_ROS2/orbbec_camera_msgs/COLCON_IGNORE
 
 WORKDIR /root/piper_ws
 
@@ -108,6 +115,13 @@ RUN pip3 install --no-cache-dir --break-system-packages \
       catkin_pkg \
       lark \
       piper_sdk
+
+# piper_ros main defaults piper_ctrl_single_node to sdk_backend:=pyagxarm
+# (piper/sdk_backend.py); piper_sdk stays as the fallback. Pinned to the commit
+# validated on the robot (pyAgxArm 1.0.0) -- upgrades must pass
+# test_sdk_backend_frames.py.
+RUN pip3 install --no-cache-dir --break-system-packages \
+      "git+https://github.com/agilexrobotics/pyAgxArm.git@841a625f5f4920e776f20b934eb13048b747e6d0"
 
 RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     colcon build --symlink-install

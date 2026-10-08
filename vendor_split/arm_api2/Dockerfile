@@ -65,10 +65,16 @@ RUN apt-get update && \
 
 WORKDIR /root/arm_api2_ws/src
 
-# Branches match what is currently checked out under /root/arms_ws/src in the
-# combined dev container — update here if that container's branches move on.
-RUN git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2.git && \
-    git clone -b apirsic/devel https://github.com/CroboticSolutions/arm_api2_msgs.git
+# Every CroboticSolutions repo's tested version lives on `main` (since 2026-10-05).
+RUN git clone -b main https://github.com/CroboticSolutions/arm_api2.git && \
+    git clone -b main https://github.com/CroboticSolutions/arm_api2_msgs.git
+
+# moveit2_iface.launch.py reads piper_with_gripper_moveit/config/joint_limits.yaml
+# for robot_name:=piper (its internal RobotModel needs the acceleration limits for
+# Cartesian time-parameterization). Only that package is linked into the
+# workspace; the rest of piper_ros lives in piper_driver_cont.
+RUN git clone --depth 1 -b main https://github.com/CroboticSolutions/piper_ros.git /root/piper_ros_src && \
+    ln -s /root/piper_ros_src/src/piper_moveit/piper_with_gripper_moveit piper_with_gripper_moveit
 
 WORKDIR /root/arm_api2_ws
 

@@ -47,6 +47,12 @@ ros2 launch ros2_dash_gui bridge_piper.launch.py "${launch_args[@]}" &
 pids+=("$!")
 
 cd /root/arms_ws/src/demomotion_gui/launch_server
+# demomotion_gui main (2026-10): runtime_service is the sole owner of every ROS
+# launch process (loopback only, one worker); main:app is a stateless gateway
+# that forwards to it. Port must match ARM_API2_RUNTIME_PORT in the gateway.
+export ARM_API2_RUNTIME_PORT="${ARM_API2_RUNTIME_PORT:-8092}"
+uvicorn runtime_service:app --host 127.0.0.1 --port "${ARM_API2_RUNTIME_PORT}" --workers 1 &
+pids+=("$!")
 uvicorn main:app --host "${LAUNCH_SERVER_HOST}" --port "${LAUNCH_SERVER_PORT}" --workers 1 &
 pids+=("$!")
 

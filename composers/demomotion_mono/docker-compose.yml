@@ -13,7 +13,8 @@ services:
         - default
       args:
         SRC_REVISIONS: ${SRC_REVISIONS:-unknown}
-        COLCON_WORKERS: ${COLCON_WORKERS:-4}
+        COLCON_WORKERS: ${COLCON_WORKERS:-2}
+        COLCON_MAKE_JOBS: ${COLCON_MAKE_JOBS:-2}
         FP_CUDA_ARCHS: ${FP_CUDA_ARCHS:-8.6;8.9;12.0}
         FP_MAX_JOBS: ${FP_MAX_JOBS:-2}
     container_name: demomotion

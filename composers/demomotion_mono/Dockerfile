@@ -232,7 +232,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # ---------------------------------------------------------------- build
 FROM deps AS build
 ARG ROS_DISTRO
-ARG COLCON_WORKERS=4
+# Ukupno kompajlera = COLCON_WORKERS (paketa paralelno) x COLCON_MAKE_JOBS (make -j po paketu).
+# Bez ograničenja colcon pušta make -j<sve jezgre> po paketu: rosidl/Orbbec g++ ima 1-2 GB,
+# pa je 4 x 16 procesa zamrznulo laptop. demomotion.sh računa vrijednosti iz RAM-a.
+ARG COLCON_WORKERS=2
+ARG COLCON_MAKE_JOBS=2
 COPY --from=sources /root/arms_ws/src /root/arms_ws/src
 COPY --from=sources /root/arms_ws/VERSIONS.yaml /root/arms_ws/repos.yaml /root/arms_ws/
 
@@ -241,7 +245,8 @@ COPY --from=sources /root/arms_ws/VERSIONS.yaml /root/arms_ws/repos.yaml /root/a
 # Bez --symlink-install (kod je u imageu, ne mijenja se). Orbbec traži Release.
 RUN --mount=type=cache,target=/root/.ccache \
     export CCACHE_DIR=/root/.ccache CCACHE_MAXSIZE=8G \
-           CMAKE_C_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER_LAUNCHER=ccache && \
+           CMAKE_C_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+           MAKEFLAGS="-j${COLCON_MAKE_JOBS}" CMAKE_BUILD_PARALLEL_LEVEL=${COLCON_MAKE_JOBS} && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --base-paths src --parallel-workers ${COLCON_WORKERS} \
       --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
@@ -257,7 +262,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY requirements/megapose.lock /opt/demomotion/requirements/
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.ccache \
-    export CCACHE_DIR=/root/.ccache CMAKE_C_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER_LAUNCHER=ccache && \
+    export CCACHE_DIR=/root/.ccache CMAKE_C_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+           CMAKE_BUILD_PARALLEL_LEVEL=$((COLCON_WORKERS * COLCON_MAKE_JOBS)) && \
     for v in src/megapose6d/venv src/third_party/pym3t/.venv; do \
       python3 -m venv --system-site-packages "$v" && \
       echo /root/py_global/lib/python3.12/site-packages > "$v/lib/python3.12/site-packages/py_global_overlay.pth"; \
@@ -272,7 +278,7 @@ RUN --mount=type=cache,target=/root/.ccache \
     FP=src/third_party/FoundationPose V=/root/foundationpose/venv/bin/python && \
     mkdir -p $FP/mycpp/build && cd $FP/mycpp/build && \
     cmake .. -DPYTHON_EXECUTABLE=$V -Dpybind11_DIR=$($V -m pybind11 --cmakedir) && \
-    make -j${COLCON_WORKERS} && \
+    make -j$((COLCON_WORKERS * COLCON_MAKE_JOBS)) && \
     ln -sfn /root/arms_ws/src/third_party/FoundationPose /root/foundationpose/FoundationPose
 
 # Frontend: dist/ je u imageu, pa gui_stack ne radi npm run build pri startu

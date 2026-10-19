@@ -43,9 +43,25 @@ src_revisions() {
     done | sha256sum | cut -c1-16
 }
 
+# Ukupno g++ procesa u C++ buildu iz RAM-a: pola RAM-a (ostalo za sustav i druge kontejnere),
+# ~2.5 GB po procesu (rosidl poruke, Orbbec). MemTotal, ne MemAvailable: isti RAM = iste
+# vrijednosti = Docker cache colcon koraka ostaje valjan.
+build_parallelism() {
+  local mem_gb total
+  mem_gb=$(awk '/MemTotal/{print int($2/1048576)}' /proc/meminfo)
+  total=$(( mem_gb * 2 / 10 )); [ "$total" -ge 1 ] || total=1
+  export COLCON_WORKERS="${COLCON_WORKERS:-2}"
+  if [ -z "${COLCON_MAKE_JOBS:-}" ]; then
+    COLCON_MAKE_JOBS=$(( total / COLCON_WORKERS )); [ "$COLCON_MAKE_JOBS" -ge 1 ] || COLCON_MAKE_JOBS=1
+  fi
+  export COLCON_MAKE_JOBS
+  echo "RAM ${mem_gb} GB -> C++ build: ${COLCON_WORKERS} paketa x ${COLCON_MAKE_JOBS} jobova (override: .env)"
+}
+
 build() {
   check_docker
   check_ssh
+  build_parallelism
   SRC_REVISIONS=$(src_revisions)
   export SRC_REVISIONS
   echo "SRC_REVISIONS=${SRC_REVISIONS}"

@@ -34,7 +34,7 @@ check_models() {
 
 case "${1:-stack}" in
   stack)
-    check_models || { echo "[demomotion] Modeli se montiraju iz DEMOMOTION_MODELS (.env). Vidi README.md." >&2; exit 1; }
+    check_models || { echo "[demomotion] Modeli su u imageu (stage models); image je nepotpun, ponovno ./demomotion.sh build." >&2; exit 1; }
     echo "[demomotion] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}, verzije koda: /root/arms_ws/VERSIONS.yaml"
 
     stop_stack() {

@@ -48,7 +48,7 @@ fi
 echo "== .env"
 if [ ! -f .env ]; then
   cp .env.example .env
-  warn "napravljen .env iz .env.example; provjeri DEMOMOTION_MODELS i DEMOMOTION_DATA"
+  warn "napravljen .env iz .env.example; provjeri DEMOMOTION_DATA"
 else
   ok ".env postoji"
 fi
@@ -61,11 +61,6 @@ ok "mape postoje"
 if [ -z "$(ls -A "$DEMOMOTION_DATA/ros_home/calibration" 2>/dev/null)" ]; then
   warn "nema kalibracije u $DEMOMOTION_DATA/ros_home/calibration (hand-eye, TCP). Vidi README, 'Kalibracija'."
 fi
-
-echo "== Modeli ($DEMOMOTION_MODELS)"
-mkdir -p "$DEMOMOTION_MODELS" 2>/dev/null || { sudo mkdir -p "$DEMOMOTION_MODELS" && sudo chown "$USER:" "$DEMOMOTION_MODELS"; }
-echo "  skidam što nedostaje (~3.8 GB prvi put), provjera SHA256"
-/usr/bin/python3 -I scripts/download_models.py "$DEMOMOTION_MODELS" || fail "skidanje modela (pokreni ponovno, nastavlja gdje je stalo)"
 
 echo
 if [ "$FAILED" = 0 ]; then

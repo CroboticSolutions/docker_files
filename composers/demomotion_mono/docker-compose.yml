@@ -41,8 +41,6 @@ services:
     volumes:
       - /dev:/dev
       - /tmp/.X11-unix:/tmp/.X11-unix
-      # modeli, read-only (struktura u README.md)
-      - ${DEMOMOTION_MODELS:?postavi DEMOMOTION_MODELS u .env}:/models:ro
       # podaci koji moraju preživjeti novi image
       - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # calibration/ + ROS logovi
       - ${DEMOMOTION_DATA}/bags:/root/bags

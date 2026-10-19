@@ -5,7 +5,7 @@ U kontejneru rade GUI (:8080), debug konzola (:8091), dash bridge (:9094) i WebR
 GUI sam pokreće driver, MoveIt, arm_api2, kameru, SAM2, WiLoR i MegaPose.
 
 ```bash
-./setup_host.sh            # jednom po računalu: provjere, udev, .env, mape
+./setup_host.sh            # jednom po računalu: provjere, udev, .env, mape za podatke
 ./demomotion.sh build      # povuče vrhove grana iz repos.yaml i builda image
 ./demomotion.sh up         # http://localhost:8080
 ./demomotion.sh attach     # tmux s logovima servisa (Ctrl-b d za izlaz)
@@ -16,20 +16,19 @@ GUI sam pokreće driver, MoveIt, arm_api2, kameru, SAM2, WiLoR i MegaPose.
 
 - Ubuntu, Docker s compose v2 i buildx, NVIDIA driver i NVIDIA Container Toolkit
 - SSH ključ s pristupom `CroboticSolutions` repoima, učitan u agent (`ssh-add -l`)
-- Internet za prvo skidanje modela (~3.8 GB, ispod)
+- Internet: build skida i modele (~3.8 GB, ispod)
 - Prvi build traje dugo (torch, pytorch3d za FoundationPose: 20-40 min po arhitekturi, depthai,
-  Orbbec) i image je velik (~25 GB). Kasniji buildovi ponovno grade samo kod, i to samo ako se
+  Orbbec) i image je velik (~29 GB). Kasniji buildovi ponovno grade samo kod, i to samo ako se
   neka grana pomakla. pytorch3d i nvdiffrast ostaju u cacheu.
 
 ## Modeli
 
-`./setup_host.sh` ih skine sam (`scripts/download_models.py`, samo Python standardna biblioteka)
-u `DEMOMOTION_MODELS` iz `.env` i provjeri SHA256 prema verzijama iz razvojnog kontejnera.
-Ponovno pokretanje preskače ono što već postoji i nastavlja nakon prekida.
-Volume se montira read-only na `/models`:
+Modeli su **u imageu** (`/models`, ~3.8 GB). Build ih skine iz javnih izvora u zasebnom stageu
+(`scripts/download_models.py`) i provjeri SHA256 prema verzijama iz razvojnog kontejnera.
+Skidaju se jednom i ostaju u build cacheu (do `docker builder prune`):
 
 ```
-models/
+/models/
 ├── sam/sam2.1_hiera_large.pt          857 MB   dl.fbaipublicfiles.com (Meta)
 ├── wilor/wilor_final.ckpt             2.4 GB   huggingface.co/spaces/rolpotamias/WiLoR
 ├── wilor/detector.pt                   52 MB   isto
@@ -38,8 +37,10 @@ models/
 ```
 
 **MANO** (`MANO_RIGHT.pkl`, `MANO_LEFT.pkl`) je u našem WiLoR forku (`mano_data/mano/`) i
-dolazi s kodom. MANO licenca zabranjuje redistribuciju, zato **`CroboticSolutions/WiLoR` mora
-ostati privatan**.
+dolazi s kodom.
+
+**Licence:** MANO i WiLoR težine se ne smiju redistribuirati. Zato `CroboticSolutions/WiLoR`
+mora ostati privatan, a image se **ne smije pushati u javni registry** (npr. javni Docker Hub).
 
 ## Kalibracija i podaci
 

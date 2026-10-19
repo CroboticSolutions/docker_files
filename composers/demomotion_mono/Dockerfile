@@ -7,8 +7,9 @@
 #
 # Putanje su IDENTIČNE razvojnom kontejneru (/root/arms_ws, /root/py_global,
 # /root/arm_perception, ~/.ros/calibration ...), pa kod ne treba mijenjati.
-# Modeli nisu u imageu: compose montira $DEMOMOTION_MODELS na /models, a image
-# ima symlinkove s putanja koje kod očekuje (vidi "modeli" niže).
+# Modeli su u imageu (/models, ~3.8 GB, stage "models"), a image ima symlinkove
+# s putanja koje kod očekuje. U imageu su i MANO i WiLoR težine (licence ne
+# dopuštaju redistribuciju): image se NE smije pushati u javni registry.
 #
 # Build ide kroz ./demomotion.sh build (SSH agent za privatne repoe, SRC_REVISIONS).
 # Prva verzija: finalni image = build stage (veći, ali bez iznenađenja s
@@ -76,6 +77,13 @@ RUN for f in /usr/lib/python3/dist-packages/matplotlib-*-nspkg.pth; do \
 WORKDIR /root/arms_ws
 COPY config/cyclonedds_localhost.xml config/setup_ros_domain.sh /root/arms_ws/
 
+# ---------------------------------------------------------------- models
+# Javni izvori, SHA256 provjera prema razvojnom kontejneru (scripts/download_models.py).
+# Zaseban stage: mijenja se samo kad se promijeni skripta (popis modela).
+FROM base AS models
+COPY scripts/download_models.py /tmp/download_models.py
+RUN python3 -I /tmp/download_models.py /models
+
 # ---------------------------------------------------------------- python
 # py_global: venv sa --system-site-packages (rclpy i cv_bridge iz apta ostaju vidljivi).
 FROM base AS python
@@ -129,6 +137,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # ---------------------------------------------------------------- sources
 FROM fpdeps AS sources
+# Modeli prije koda: sloj od 3.8 GB ostaje u cacheu kad se pomakne grana
+COPY --from=models /models /models
 ARG SAM2_COMMIT=2b90b9f5ceec907a1c18123530e92e794ad901a4
 COPY repos.yaml /root/arms_ws/repos.yaml
 # SRC_REVISIONS = hash vrhova svih grana (računa ga demomotion.sh). Kad se neka
@@ -196,8 +206,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # ---------------------------------------------------------------- demomotion (finalni)
 FROM build AS demomotion
 
-# Modeli: $DEMOMOTION_MODELS se montira na /models (read-only).
-# Symlinkovi s putanja koje kod očekuje:
+# Modeli su u /models (stage "models"). Symlinkovi s putanja koje kod očekuje:
 #   sam/sam2.1_hiera_large.pt            /root/arm_perception/models/sam/
 #   wilor/{wilor_final.ckpt,detector.pt} WiLoR/pretrained_models/ (yaml-ovi u toj mapi su u gitu)
 #   (MANO je u gitu, WiLoR/mano_data/mano)

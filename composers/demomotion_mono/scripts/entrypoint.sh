@@ -10,6 +10,7 @@ source /opt/ros/jazzy/setup.bash
 . /root/arms_ws/setup_ros_domain.sh
 source /root/arms_ws/install/setup.bash
 source /root/py_global/bin/activate
+source /opt/demomotion/calibration_env.sh
 
 check_models() {
   local missing=0 f
@@ -36,6 +37,7 @@ case "${1:-stack}" in
   stack)
     check_models || { echo "[demomotion] Modeli su u imageu (stage models); image je nepotpun, ponovno ./demomotion.sh build." >&2; exit 1; }
     echo "[demomotion] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}, verzije koda: /root/arms_ws/VERSIONS.yaml"
+    echo "[demomotion] kalibracije: ${ARMS_CALIBRATION_DIR:-/root/.ros/calibration} ($(find "${ARMS_CALIBRATION_DIR:-/root/.ros/calibration}" -name current.yaml 2>/dev/null | wc -l) aktivnih; bez njih nominalne CAD vrijednosti)"
 
     stop_stack() {
       echo "[demomotion] gasim stack"

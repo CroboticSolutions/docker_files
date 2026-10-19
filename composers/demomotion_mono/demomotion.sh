@@ -7,10 +7,11 @@
 #   ./demomotion.sh shell     bash u kontejneru koji radi
 #   ./demomotion.sh logs      logovi kontejnera
 #   ./demomotion.sh versions  točni commitovi u imageu
+#   ./demomotion.sh save-calibration ["poruka"]   commit + push kalibracija u demomotion_calibration
 set -euo pipefail
 cd "$(dirname "$0")"
 
-usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 
 [ -f .env ] || { echo "Nema .env. Prvo pokreni ./setup_host.sh" >&2; exit 1; }
 
@@ -49,5 +50,20 @@ case "${1:-}" in
   shell)    docker compose exec demomotion bash ;;
   logs)     docker compose logs -f ;;
   versions) docker compose run --rm --no-deps demomotion cat /root/arms_ws/VERSIONS.yaml ;;
+  save-calibration)
+    set -a; source .env; set +a
+    [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ] || { echo "DEMOMOTION_CALIBRATION_SET nije postavljen u .env" >&2; exit 1; }
+    cal="$DEMOMOTION_DATA/calibration"
+    git -C "$cal" add -A "$DEMOMOTION_CALIBRATION_SET"
+    if git -C "$cal" diff --cached --quiet; then
+      echo "Nema novih kalibracija u $DEMOMOTION_CALIBRATION_SET."
+      exit 0
+    fi
+    git -C "$cal" status --short
+    git -C "$cal" commit -q -m "${2:-$DEMOMOTION_CALIBRATION_SET: kalibracija $(date '+%F %H:%M')}"
+    git -C "$cal" pull -q --rebase
+    git -C "$cal" push -q
+    echo "Spremljeno: $(git -C "$cal" log --oneline -1)"
+    ;;
   *)        usage ;;
 esac

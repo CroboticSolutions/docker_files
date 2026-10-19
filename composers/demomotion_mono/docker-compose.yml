@@ -38,11 +38,14 @@ services:
       DISPLAY: ${DISPLAY:-}
       NVIDIA_DRIVER_CAPABILITIES: all
       GUI_USE_CONTAINERS: "0"
+      # postav iz demomotion_calibration; entrypoint postavi ARMS_CALIBRATION_DIR
+      DEMOMOTION_CALIBRATION_SET: ${DEMOMOTION_CALIBRATION_SET:-}
     volumes:
       - /dev:/dev
       - /tmp/.X11-unix:/tmp/.X11-unix
       # podaci koji moraju preživjeti novi image
-      - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # calibration/ + ROS logovi
+      - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # ROS logovi (+ calibration/ bez postava)
+      - ${DEMOMOTION_DATA}/calibration:/root/calibration                                 # checkout demomotion_calibration
       - ${DEMOMOTION_DATA}/bags:/root/bags
       - ${DEMOMOTION_DATA}/diagnostics:/root/arms_ws/diagnostics
       - ${DEMOMOTION_DATA}/block_groups:/root/arm_perception/block_groups

@@ -42,24 +42,41 @@ dolazi s kodom.
 **Licence:** MANO i WiLoR težine se ne smiju redistribuirati. Zato `CroboticSolutions/WiLoR`
 mora ostati privatan, a image se **ne smije pushati u javni registry** (npr. javni Docker Hub).
 
-## Kalibracija i podaci
+## Kalibracija
+
+Kalibracije (hand-eye, TCP, dubina) su u privatnom repou
+[`CroboticSolutions/demomotion_calibration`](https://github.com/CroboticSolutions/demomotion_calibration),
+mapa po fizičkom postavu (robot + kamera + alat). U `.env` upiši **svoj** postav:
+
+```bash
+DEMOMOTION_CALIBRATION_SET=toni-legion
+```
+
+`./setup_host.sh` klonira repo u `$DEMOMOTION_DATA/calibration`, a kontejner čita i piše ravno u
+`/root/calibration/<postav>` (`ARMS_CALIBRATION_DIR`). Nova kalibracija iz GUI-ja (Apply) završi u
+checkoutu, a u git ide s:
+
+```bash
+./demomotion.sh save-calibration "hand-eye nakon zamjene nosača"
+```
+
+**Nikad ne uzimaj tuđi postav**: kalibracija vrijedi samo za hardver na kojem je napravljena, a s
+krivom robot ide na krive pozicije bez ikakve greške. Novo računalo/robot: novi naziv postava
+(prazna mapa) ili prazan `DEMOMOTION_CALIBRATION_SET`, pa kalibracija kroz GUI. Bez kalibracije
+xacro koristi nominalne (CAD) vrijednosti.
+
+## Podaci
 
 `DEMOMOTION_DATA` u `.env`. Sve što mora preživjeti novi image je tu:
 
 | Mapa | U kontejneru | Što |
 |---|---|---|
-| `ros_home/` | `/root/.ros` | `calibration/` (hand-eye, TCP, kamera) i ROS logovi |
+| `calibration/` | `/root/calibration` | checkout `demomotion_calibration` |
+| `ros_home/` | `/root/.ros` | ROS logovi |
 | `bags/` | `/root/bags` | snimljeni bagovi |
 | `diagnostics/` | `/root/arms_ws/diagnostics` | dijagnostika iz GUI-ja |
 | `logs/` | `/var/log/arm_api2_gui` | launch logovi GUI-ja |
 | `block_groups/`, `gui_config/`, `cache/`, `megapose_cache/` | | ostalo |
-
-Kalibracija je vezana uz konkretan robot i kameru. Na novom računalu napravi novu kroz GUI.
-Ako isti robot prelazi iz razvojnog kontejnera:
-
-```bash
-docker cp <dev>:/root/.ros/calibration/. /opt/demomotion/data/ros_home/calibration/
-```
 
 ## Koja verzija koda
 
@@ -75,7 +92,7 @@ i commitati.
 
 - FoundationPose CUDA ekstenzije se kompajliraju za `FP_CUDA_ARCHS` iz `.env` (zadano RTX 30xx/40xx/50xx).
   GPU izvan tog popisa javi "no kernel image is available": dodaj njegovu arhitekturu i ponovno buildaj.
-- Bez kalibracije u `ros_home/calibration` stack **ne javlja grešku**: xacro tiho uzme nominalne
+- Bez kalibracije (`DEMOMOTION_CALIBRATION_SET`) stack **ne javlja grešku**: xacro tiho uzme nominalne
   (CAD) vrijednosti iz `piper_description/config/calibration/*_default.yaml`, koje su od stvarnih
   daleko nekoliko milimetara. Na novom računalu prvo kalibriraj (hand-eye, TCP).
 - `privileged: true` i finalni image = build stage. Sužavanje ovlasti i smanjivanje imagea dolaze kasnije.

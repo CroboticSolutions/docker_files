@@ -277,13 +277,14 @@ RUN mkdir -p /root/.ros/calibration /root/bags /root/arms_ws/diagnostics \
     touch /root/arms_ws/diagnostics/COLCON_IGNORE
 
 COPY config/tmuxinator_gui_stack.yml /root/.tmuxinator/gui_stack.yml
-COPY scripts/entrypoint.sh scripts/healthcheck.sh /opt/demomotion/
+COPY scripts/entrypoint.sh scripts/healthcheck.sh scripts/calibration_env.sh /opt/demomotion/
 RUN chmod +x /opt/demomotion/*.sh && \
     printf '%s\n' \
       'source /opt/ros/jazzy/setup.bash' \
       '. /root/arms_ws/setup_ros_domain.sh' \
       'source /root/arms_ws/install/setup.bash' \
-      'source /root/py_global/bin/activate' >> /root/.bashrc
+      'source /root/py_global/bin/activate' \
+      'source /opt/demomotion/calibration_env.sh' >> /root/.bashrc
 
 # Monolit: GUI sam pokreće sve lokalno, ne preko docker compose/exec
 ENV GUI_USE_CONTAINERS=0 \

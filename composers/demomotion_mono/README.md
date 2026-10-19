@@ -75,8 +75,9 @@ i commitati.
 
 - FoundationPose CUDA ekstenzije se kompajliraju za `FP_CUDA_ARCHS` iz `.env` (zadano RTX 30xx/40xx/50xx).
   GPU izvan tog popisa javi "no kernel image is available": dodaj njegovu arhitekturu i ponovno buildaj.
-- Kalibracija welding guna koja se upisuje u `piper_description` (xacro u `src`) nestaje s
-  novim imageom. Treba je prebaciti u `~/.ros/calibration` ili u git.
+- Bez kalibracije u `ros_home/calibration` stack **ne javlja grešku**: xacro tiho uzme nominalne
+  (CAD) vrijednosti iz `piper_description/config/calibration/*_default.yaml`, koje su od stvarnih
+  daleko nekoliko milimetara. Na novom računalu prvo kalibriraj (hand-eye, TCP).
 - `privileged: true` i finalni image = build stage. Sužavanje ovlasti i smanjivanje imagea dolaze kasnije.
 - Kontejner koristi CycloneDDS samo na loopbacku: ROS topici nisu vidljivi s drugih računala
   (GUI u browseru jest).

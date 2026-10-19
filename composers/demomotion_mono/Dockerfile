@@ -242,13 +242,15 @@ COPY --from=sources /root/arms_ws/VERSIONS.yaml /root/arms_ws/repos.yaml /root/a
 
 # C++ (colcon, pym3t, mycpp) ide kroz ccache u cache mountu: novi klon ima nove
 # mtimeove, ali nepromijenjeni paketi (Orbbec, depthai...) se ne kompajliraju ponovno.
-# Bez --symlink-install (kod je u imageu, ne mijenja se). Orbbec traži Release.
+# --symlink-install kao u razvojnom kontejneru: Python čvorovi traže podatke relativno od
+# __file__ (npr. arm_api2_perception -> demomotion_gui/models), što radi samo ako install/
+# pokazuje u src/. Bez toga registracija ne nađe CAD modele. Orbbec traži Release.
 RUN --mount=type=cache,target=/root/.ccache \
     export CCACHE_DIR=/root/.ccache CCACHE_MAXSIZE=8G \
            CMAKE_C_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER_LAUNCHER=ccache \
            MAKEFLAGS="-j${COLCON_MAKE_JOBS}" CMAKE_BUILD_PARALLEL_LEVEL=${COLCON_MAKE_JOBS} && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --base-paths src --parallel-workers ${COLCON_WORKERS} \
+    colcon build --symlink-install --base-paths src --parallel-workers ${COLCON_WORKERS} \
       --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
       --event-handlers console_cohesion+ && \
     rm -rf log && (ccache -s || true)

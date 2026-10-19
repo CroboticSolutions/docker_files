@@ -33,8 +33,30 @@ check_models() {
   return $missing
 }
 
+# demomotion_calibration u Docker volumeu /root/calibration: prvi start klonira, kasnije
+# pull (samo ako nema nespremljenih kalibracija). Bez mreže/SSH-a radi s onim što ima.
+sync_calibration() {
+  local dir=/root/calibration repo=git@github.com:CroboticSolutions/demomotion_calibration.git
+  [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ] || return 0
+  if [ ! -d "$dir/.git" ]; then
+    if git clone -q "$repo" /tmp/calibration_clone; then
+      cp -a /tmp/calibration_clone/. "$dir/" && rm -rf /tmp/calibration_clone
+      echo "[demomotion] kloniran demomotion_calibration"
+    else
+      echo "[demomotion] upozorenje: klon demomotion_calibration nije uspio (SSH agent?); bez kalibracija iz repoa" >&2
+    fi
+  elif [ -z "$(git -C "$dir" status --porcelain)" ]; then
+    git -C "$dir" pull -q --ff-only ||
+      echo "[demomotion] upozorenje: pull demomotion_calibration nije uspio, koristim lokalno stanje" >&2
+  else
+    echo "[demomotion] nespremljene kalibracije u volumeu: ./demomotion.sh save-calibration" >&2
+  fi
+  mkdir -p "$dir/$DEMOMOTION_CALIBRATION_SET"
+}
+
 case "${1:-stack}" in
   stack)
+    sync_calibration
     check_models || { echo "[demomotion] Modeli su u imageu (stage models); image je nepotpun, ponovno ./demomotion.sh build." >&2; exit 1; }
     echo "[demomotion] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}, verzije koda: /root/arms_ws/VERSIONS.yaml"
     echo "[demomotion] kalibracije: ${ARMS_CALIBRATION_DIR:-/root/.ros/calibration} ($(find "${ARMS_CALIBRATION_DIR:-/root/.ros/calibration}" -name current.yaml 2>/dev/null | wc -l) aktivnih; bez njih nominalne CAD vrijednosti)"

@@ -40,6 +40,11 @@ case "${1:-}" in
     ;;
   up)
     xhost +local:root >/dev/null 2>&1 || true   # RViz iz kontejnera, ako treba
+    # SSH agent za kalibracije (klon/pull/push u kontejneru). Socket se mijenja po loginu,
+    # pa stalni link koji compose montira (isti trik kao composers/demomotion).
+    mkdir -p ~/.ssh
+    ssh-add -l >/dev/null 2>&1 || echo "PAZI: SSH agent nema ključ; kontejner neće moći povući/spremiti kalibracije" >&2
+    ln -sfn "${SSH_AUTH_SOCK:-/dev/null}" ~/.ssh/ssh_auth_sock
     docker compose up -d
     echo "GUI:           http://localhost:8080"
     echo "Debug konzola: http://localhost:8091"
@@ -51,19 +56,12 @@ case "${1:-}" in
   logs)     docker compose logs -f ;;
   versions) docker compose run --rm --no-deps demomotion cat /root/arms_ws/VERSIONS.yaml ;;
   save-calibration)
-    set -a; source .env; set +a
-    [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ] || { echo "DEMOMOTION_CALIBRATION_SET nije postavljen u .env" >&2; exit 1; }
-    cal="$DEMOMOTION_DATA/calibration"
-    git -C "$cal" add -A "$DEMOMOTION_CALIBRATION_SET"
-    if git -C "$cal" diff --cached --quiet; then
-      echo "Nema novih kalibracija u $DEMOMOTION_CALIBRATION_SET."
-      exit 0
-    fi
-    git -C "$cal" status --short
-    git -C "$cal" commit -q -m "${2:-$DEMOMOTION_CALIBRATION_SET: kalibracija $(date '+%F %H:%M')}"
-    git -C "$cal" pull -q --rebase
-    git -C "$cal" push -q
-    echo "Spremljeno: $(git -C "$cal" log --oneline -1)"
+    # git radi u kontejneru (checkout je u njegovom volumeu); autor = tvoj git na hostu
+    name=$(git config user.name || true); email=$(git config user.email || true)
+    docker compose exec \
+      -e GIT_AUTHOR_NAME="$name" -e GIT_AUTHOR_EMAIL="$email" \
+      -e GIT_COMMITTER_NAME="$name" -e GIT_COMMITTER_EMAIL="$email" \
+      demomotion /opt/demomotion/save_calibration.sh "${2:-}"
     ;;
   *)        usage ;;
 esac

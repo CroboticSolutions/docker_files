@@ -272,12 +272,16 @@ RUN W=/root/arms_ws/src/perception/WiLoR && \
     ln -sfn /models/megapose /root/arms_ws/src/megapose6d/local_data/megapose-models
 
 # Mjesta za volumene s podacima (compose), da postoje i bez njih
-RUN mkdir -p /root/.ros/calibration /root/bags /root/arms_ws/diagnostics \
+RUN mkdir -p /root/.ros/calibration /root/calibration /root/bags /root/arms_ws/diagnostics \
              /root/arm_perception/block_groups /var/log/arm_api2_gui /root/.config/arm_api2_gui && \
     touch /root/arms_ws/diagnostics/COLCON_IGNORE
 
+# GitHub host ključ za demomotion_calibration (klon/pull/push u kontejneru preko SSH agenta hosta)
+RUN mkdir -p -m 0700 /root/.ssh && \
+    ssh-keyscan -t ed25519,rsa,ecdsa github.com > /root/.ssh/known_hosts 2>/dev/null
+
 COPY config/tmuxinator_gui_stack.yml /root/.tmuxinator/gui_stack.yml
-COPY scripts/entrypoint.sh scripts/healthcheck.sh scripts/calibration_env.sh /opt/demomotion/
+COPY scripts/entrypoint.sh scripts/healthcheck.sh scripts/calibration_env.sh scripts/save_calibration.sh /opt/demomotion/
 RUN chmod +x /opt/demomotion/*.sh && \
     printf '%s\n' \
       'source /opt/ros/jazzy/setup.bash' \

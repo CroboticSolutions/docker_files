@@ -56,29 +56,16 @@ set -a; source .env; set +a
 
 echo "== Podaci ($DEMOMOTION_DATA)"
 mkdir -p "$DEMOMOTION_DATA" 2>/dev/null || { sudo mkdir -p "$DEMOMOTION_DATA" && sudo chown "$USER:" "$DEMOMOTION_DATA"; }
-mkdir -p "$DEMOMOTION_DATA"/{ros_home,calibration,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache}
+mkdir -p "$DEMOMOTION_DATA"/{ros_home,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache}
 ok "mape postoje"
 
 echo "== Kalibracija"
-CAL_REPO=git@github.com:CroboticSolutions/demomotion_calibration.git
-CAL_DIR="$DEMOMOTION_DATA/calibration"
-if [ -z "${DEMOMOTION_CALIBRATION_SET:-}" ]; then
-  warn "DEMOMOTION_CALIBRATION_SET nije postavljen: stack koristi nominalne (CAD) vrijednosti dok ne kalibriraš u GUI-ju."
-  warn "Postojeći postavi: repo $CAL_REPO (README.md). Nikad ne uzimaj tuđi postav."
+# Klonira je kontejner pri pokretanju (Docker volume), ovdje samo provjera postavke.
+if [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ]; then
+  ok "postav $DEMOMOTION_CALIBRATION_SET (kontejner ga povuče iz demomotion_calibration pri pokretanju)"
 else
-  if [ ! -d "$CAL_DIR/.git" ]; then
-    git clone -q "$CAL_REPO" "$CAL_DIR" && ok "kloniran demomotion_calibration" || fail "git clone $CAL_REPO"
-  elif [ -z "$(git -C "$CAL_DIR" status --porcelain)" ]; then
-    git -C "$CAL_DIR" pull -q --ff-only && ok "demomotion_calibration ažuran" || warn "git pull nije uspio, koristim lokalno stanje"
-  else
-    warn "lokalne nespremljene kalibracije u $CAL_DIR (./demomotion.sh save-calibration)"
-  fi
-  if [ -d "$CAL_DIR/$DEMOMOTION_CALIBRATION_SET" ]; then
-    ok "postav $DEMOMOTION_CALIBRATION_SET: $(find "$CAL_DIR/$DEMOMOTION_CALIBRATION_SET" -name current.yaml | wc -l) aktivnih kalibracija"
-  else
-    mkdir -p "$CAL_DIR/$DEMOMOTION_CALIBRATION_SET"
-    warn "novi postav $DEMOMOTION_CALIBRATION_SET (prazan): kalibriraj u GUI-ju pa ./demomotion.sh save-calibration"
-  fi
+  warn "DEMOMOTION_CALIBRATION_SET nije postavljen: nominalne (CAD) vrijednosti dok ne kalibriraš u GUI-ju."
+  warn "Postavi su mape u privatnom repou CroboticSolutions/demomotion_calibration. Nikad ne uzimaj tuđi."
 fi
 
 echo

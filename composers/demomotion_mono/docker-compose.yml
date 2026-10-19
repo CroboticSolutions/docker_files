@@ -40,12 +40,15 @@ services:
       GUI_USE_CONTAINERS: "0"
       # postav iz demomotion_calibration; entrypoint postavi ARMS_CALIBRATION_DIR
       DEMOMOTION_CALIBRATION_SET: ${DEMOMOTION_CALIBRATION_SET:-}
+      # SSH agent hosta (demomotion.sh up ga linka): klon/pull/push demomotion_calibration
+      SSH_AUTH_SOCK: /ssh-agent
     volumes:
       - /dev:/dev
       - /tmp/.X11-unix:/tmp/.X11-unix
       # podaci koji moraju preživjeti novi image
       - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # ROS logovi (+ calibration/ bez postava)
-      - ${DEMOMOTION_DATA}/calibration:/root/calibration                                 # checkout demomotion_calibration
+      - calibration:/root/calibration                                                   # checkout demomotion_calibration (Docker volume)
+      - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
       - ${DEMOMOTION_DATA}/bags:/root/bags
       - ${DEMOMOTION_DATA}/diagnostics:/root/arms_ws/diagnostics
       - ${DEMOMOTION_DATA}/block_groups:/root/arm_perception/block_groups
@@ -53,3 +56,8 @@ services:
       - ${DEMOMOTION_DATA}/gui_config:/root/.config/arm_api2_gui                         # debug token
       - ${DEMOMOTION_DATA}/megapose_cache:/root/arms_ws/src/megapose6d/local_data/joblib_cache
       - ${DEMOMOTION_DATA}/cache:/root/.cache                                            # torch hub, M3T, ultralytics
+
+volumes:
+  # Klon demomotion_calibration; entrypoint ga napravi/pulla. Preživi rebuild i down
+  # (briše ga samo `docker compose down -v`, pa prije toga save-calibration).
+  calibration:

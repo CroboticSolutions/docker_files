@@ -52,13 +52,16 @@ mapa po fizičkom postavu (robot + kamera + alat). U `.env` upiši **svoj** post
 DEMOMOTION_CALIBRATION_SET=toni-legion
 ```
 
-`./setup_host.sh` klonira repo u `$DEMOMOTION_DATA/calibration`, a kontejner čita i piše ravno u
-`/root/calibration/<postav>` (`ARMS_CALIBRATION_DIR`). Nova kalibracija iz GUI-ja (Apply) završi u
-checkoutu, a u git ide s:
+Kontejner pri pokretanju sam klonira repo u Docker volume `calibration` (`/root/calibration`),
+a kasnije napravi `pull` ako nema nespremljenih kalibracija. Za to koristi tvoj SSH agent s hosta
+(`./demomotion.sh up` ga proslijedi). `ARMS_CALIBRATION_DIR` pokazuje na `/root/calibration/<postav>`,
+pa nova kalibracija iz GUI-ja (Apply) završi ravno u checkoutu. U git ide s:
 
 ```bash
 ./demomotion.sh save-calibration "hand-eye nakon zamjene nosača"
 ```
+
+Volume preživi rebuild i `down`; briše ga samo `docker compose down -v`, zato prije toga spremi.
 
 **Nikad ne uzimaj tuđi postav**: kalibracija vrijedi samo za hardver na kojem je napravljena, a s
 krivom robot ide na krive pozicije bez ikakve greške. Novo računalo/robot: novi naziv postava
@@ -67,11 +70,10 @@ xacro koristi nominalne (CAD) vrijednosti.
 
 ## Podaci
 
-`DEMOMOTION_DATA` u `.env`. Sve što mora preživjeti novi image je tu:
+`DEMOMOTION_DATA` u `.env`. Sve što mora preživjeti novi image je tu (kalibracije su u Docker volumeu, gore):
 
 | Mapa | U kontejneru | Što |
 |---|---|---|
-| `calibration/` | `/root/calibration` | checkout `demomotion_calibration` |
 | `ros_home/` | `/root/.ros` | ROS logovi |
 | `bags/` | `/root/bags` | snimljeni bagovi |
 | `diagnostics/` | `/root/arms_ws/diagnostics` | dijagnostika iz GUI-ja |

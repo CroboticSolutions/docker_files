@@ -50,11 +50,14 @@ build_parallelism() {
   local mem_gb total
   mem_gb=$(awk '/MemTotal/{print int($2/1048576)}' /proc/meminfo)
   total=$(( mem_gb * 2 / 10 )); [ "$total" -ge 1 ] || total=1
-  export COLCON_WORKERS="${COLCON_WORKERS:-2}"
+  # Ručni override samo s oba (COLCON_WORKERS + COLCON_MAKE_JOBS). Sam COLCON_WORKERS je
+  # ostatak starog .env.example (=4) i bez MAKE_JOBS ne ograničava ništa, pa se zanemaruje.
   if [ -z "${COLCON_MAKE_JOBS:-}" ]; then
+    [ -z "${COLCON_WORKERS:-}" ] || echo "COLCON_WORKERS=${COLCON_WORKERS} iz .env zanemaren (bez COLCON_MAKE_JOBS); računam iz RAM-a"
+    COLCON_WORKERS=2
     COLCON_MAKE_JOBS=$(( total / COLCON_WORKERS )); [ "$COLCON_MAKE_JOBS" -ge 1 ] || COLCON_MAKE_JOBS=1
   fi
-  export COLCON_MAKE_JOBS
+  export COLCON_WORKERS="${COLCON_WORKERS:-2}" COLCON_MAKE_JOBS
   echo "RAM ${mem_gb} GB -> C++ build: ${COLCON_WORKERS} paketa x ${COLCON_MAKE_JOBS} jobova (override: .env)"
 }
 

@@ -1,0 +1,95 @@
+# Koji kod ulazi u image (format za vcstool).
+# version je GRANA: svaki build uzme njen vrh. Na praćenu granu pushaj samo kod koji radi.
+# Stanje razvojnog kontejnera 2026-10-19 (svi repoi čisti i pushani).
+#
+# Nije ovdje:
+#   third_party/sam2  upstream, fiksiran na commit u Dockerfileu (SAM2_COMMIT)
+#   gui/OpenGR        lokalno ignoriran (COLCON_IGNORE), stack ga ne koristi
+#
+# third_party/FoundationPose je u imageu i dostupan na /root/foundationpose/FoundationPose
+# (symlink, ista putanja kao u razvojnom kontejneru).
+repositories:
+  cameras/OrbbecSDK_ROS2:
+    type: git
+    url: git@github.com:CroboticSolutions/OrbbecSDK_ROS2.git
+    version: main
+  cameras/depthai-ros:
+    type: git
+    url: git@github.com:CroboticSolutions/depthai-ros.git
+    version: main
+  cameras/realsense-ros:
+    type: git
+    url: git@github.com:CroboticSolutions/realsense-ros.git
+    version: main
+  gui/arm_api2_gui:
+    type: git
+    url: git@github.com:CroboticSolutions/demomotion_gui.git
+    version: main
+  gui/ros2_dash_gui:
+    type: git
+    url: git@github.com:CroboticSolutions/ros2_dash_gui.git
+    version: main
+  megapose6d:
+    type: git
+    url: git@github.com:CroboticSolutions/megapose6d.git
+    version: master
+  misc/hpe_ros_msgs:
+    type: git
+    url: git@github.com:CroboticSolutions/hpe_ros_msgs.git
+    version: main
+  misc/ros2_handeye_calibration:
+    type: git
+    url: git@github.com:CroboticSolutions/ros2_handeye_calibration.git
+    version: main
+  misc/webrtc_video_server:
+    type: git
+    url: git@github.com:CroboticSolutions/aiortc_webrtc_ros.git
+    version: main
+  perception/WiLoR:
+    type: git
+    url: git@github.com:CroboticSolutions/WiLoR.git
+    version: main
+  perception/hand_teleop:
+    type: git
+    url: git@github.com:CroboticSolutions/mp_ros2_wrapper.git
+    version: main
+  perception/o3d_matching:
+    type: git
+    url: git@github.com:CroboticSolutions/o3d_matching.git
+    version: main
+  perception/sam_ros2:
+    type: git
+    url: git@github.com:CroboticSolutions/sam_ros2.git
+    version: preloaded_model
+  robots/arm_api2:
+    type: git
+    url: git@github.com:CroboticSolutions/arm_api2.git
+    version: main
+  robots/arm_api2_msgs:
+    type: git
+    url: git@github.com:CroboticSolutions/arm_api2_msgs.git
+    version: main
+  robots/fanuc_description:
+    type: git
+    url: git@github.com:CroboticSolutions/fanuc_description.git
+    version: apirsic/devel
+  robots/piper_ros:
+    type: git
+    url: git@github.com:CroboticSolutions/piper_ros.git
+    version: main
+  robots/ros2_fanuc_interface:
+    type: git
+    url: git@github.com:CroboticSolutions/ros2_fanuc_interface.git
+    version: main
+  robots/seam_ros2_pkg:
+    type: git
+    url: git@github.com:CroboticSolutions/seam_ros2_pkg.git
+    version: main
+  third_party/pym3t:
+    type: git
+    url: git@github.com:CroboticSolutions/pym3t.git
+    version: main
+  third_party/FoundationPose:
+    type: git
+    url: git@github.com:CroboticSolutions/FoundationPose.git
+    version: main

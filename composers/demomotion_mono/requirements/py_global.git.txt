@@ -1,0 +1,3 @@
+# Paketi instalirani iz gita u py_global (pip install --no-deps)
+chumpy @ git+https://github.com/mattloper/chumpy@580566eafc9ac68b2614b64d6f7aaa84eebb70da
+pyAgxArm @ git+https://github.com/agilexrobotics/pyAgxArm.git@841a625f5f4920e776f20b934eb13048b747e6d0

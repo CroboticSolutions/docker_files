@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DDS for this machine only: loopback, unicast discovery (lo has no multicast).
+  Immune to Wi-Fi/DHCP address changes and keeps DDS off enp12s0 (FANUC
+  EtherNet/IP). ROS topics are not visible from other machines; the browser GUI
+  is unaffected (it talks WebSocket/HTTP). Used via CYCLONEDDS_URI in ~/.bashrc.
+-->
+<CycloneDDS xmlns="https://cdds.io/config">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface name="lo"/>
+      </Interfaces>
+      <AllowMulticast>false</AllowMulticast>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <!-- one participant per ROS process; a full stack runs ~40 -->
+      <MaxAutoParticipantIndex>200</MaxAutoParticipantIndex>
+      <Peers>
+        <Peer address="localhost"/>
+      </Peers>
+    </Discovery>
+  </Domain>
+</CycloneDDS>

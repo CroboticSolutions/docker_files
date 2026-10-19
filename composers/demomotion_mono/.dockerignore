@@ -1,0 +1,9 @@
+# Build context treba samo Dockerfile, repos.yaml, requirements/, config/ i scripts/.
+# Kod se klonira unutar builda, modeli se montiraju.
+*
+!Dockerfile
+!repos.yaml
+!requirements/
+!config/
+!scripts/
+!udev/

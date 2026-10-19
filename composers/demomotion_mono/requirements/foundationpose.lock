@@ -1,0 +1,9 @@
+# Paketi samo u /root/foundationpose/venv (overlay preko py_global; numpy 2 je namjerno), 2026-10-19.
+# nvdiffrast i pytorch3d se kompajliraju iz gita (foundationpose.git.txt).
+kornia==0.8.3
+kornia_rs==0.1.14
+numpy==2.2.6
+pybind11==3.1.0
+PyOpenGL-accelerate==3.1.10
+transformations==2026.8.8
+warp-lang==1.17.0

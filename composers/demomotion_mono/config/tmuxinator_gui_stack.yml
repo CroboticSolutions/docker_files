@@ -1,0 +1,27 @@
+# Kopija /root/.tmuxinator/gui_stack.yml za kontejner. Jedina razlika: bez
+# 'npm run build' (dist/ je napravljen u imageu). Putanje su iste kao u razvojnom kontejneru.
+name: gui_stack
+root: /root/arms_ws
+pre_window: source /root/py_global/bin/activate && source /opt/ros/jazzy/setup.bash && source /root/arms_ws/install/setup.bash && export PYTHONPATH="/root/py_global/lib/python3.12/site-packages:$PYTHONPATH"
+
+# launch_server spawns detached ros2 launch process groups; plain tmux kill-session
+# does not stop Gazebo, MoveIt, SAM, etc. Cleanup runs on stop and via session-closed hook.
+on_project_stop: bash /root/arms_ws/src/gui/arm_api2_gui/scripts/stop_gui_stack.sh
+
+windows:
+  - services:
+      layout: tiled
+      panes:
+        - bash -lc 'tmux set-hook -t gui_stack session-closed "run-shell \"bash /root/arms_ws/src/gui/arm_api2_gui/scripts/stop_gui_stack.sh\""; ros2 launch ros2_dash_gui bridge_piper.launch.py websocket_port:=9094'
+        - bash -lc 'python3 /root/arms_ws/src/misc/webrtc_video_server/examples/server/server_ros.py --host 0.0.0.0 --port 8181'
+        - bash -lc 'python3 /root/arms_ws/src/misc/webrtc_video_server/examples/server/server_ros.py --host 0.0.0.0 --port 8182'
+        # Runtime service: sole owner of ROS launch processes (loopback only, one worker).
+        - bash -lc 'cd /root/arms_ws/src/gui/arm_api2_gui/launch_server && ARM_API2_LAUNCH_LOG_DIR=/var/log/arm_api2_gui/launch uvicorn runtime_service:app --host 127.0.0.1 --port 8092 --workers 1'
+        # API/SPA gateway: stateless; restarting it does not touch ROS processes.
+        - bash -lc 'cd /root/arms_ws/src/gui/arm_api2_gui/launch_server && uvicorn main:app --host 0.0.0.0 --port 8080'
+  - debug:
+      panes:
+        # Standalone debug console (separate uvicorn/port from the main GUI on :8080).
+        # Proxies the runtime service's /status + /debug/* endpoints, so it never appears
+        # inside the operator-facing app. Open http://<host>:8091 only when needed.
+        - bash -lc 'cd /root/arms_ws/src/gui/arm_api2_gui/launch_server && uvicorn debug_console_server:app --host 0.0.0.0 --port 8091'

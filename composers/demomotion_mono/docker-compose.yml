@@ -1,0 +1,54 @@
+# DemoMotion: cijeli stack u jednom kontejneru. Koristi se kroz ./demomotion.sh.
+# Varijable dolaze iz .env (napravi ga ./setup_host.sh, predložak je .env.example).
+
+name: demomotion
+
+services:
+  demomotion:
+    image: ${DEMOMOTION_IMAGE:-demomotion:latest}
+    build:
+      context: .
+      target: demomotion
+      ssh:
+        - default
+      args:
+        SRC_REVISIONS: ${SRC_REVISIONS:-unknown}
+        COLCON_WORKERS: ${COLCON_WORKERS:-4}
+        FP_CUDA_ARCHS: ${FP_CUDA_ARCHS:-8.6;8.9;12.0}
+        FP_MAX_JOBS: ${FP_MAX_JOBS:-2}
+    container_name: demomotion
+    # DDS (CycloneDDS samo na loopbacku), CAN (can0 je sučelje hosta) i portovi GUI-ja
+    network_mode: host
+    ipc: host
+    # v1: CAN, Orbbec USB hotplug i /dev bez muke. Kasnije device_cgroup_rules.
+    privileged: true
+    init: true
+    tty: true
+    stop_grace_period: 40s
+    restart: "no"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-52}
+      DISPLAY: ${DISPLAY:-}
+      NVIDIA_DRIVER_CAPABILITIES: all
+      GUI_USE_CONTAINERS: "0"
+    volumes:
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # modeli, read-only (struktura u README.md)
+      - ${DEMOMOTION_MODELS:?postavi DEMOMOTION_MODELS u .env}:/models:ro
+      # podaci koji moraju preživjeti novi image
+      - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # calibration/ + ROS logovi
+      - ${DEMOMOTION_DATA}/bags:/root/bags
+      - ${DEMOMOTION_DATA}/diagnostics:/root/arms_ws/diagnostics
+      - ${DEMOMOTION_DATA}/block_groups:/root/arm_perception/block_groups
+      - ${DEMOMOTION_DATA}/logs:/var/log/arm_api2_gui
+      - ${DEMOMOTION_DATA}/gui_config:/root/.config/arm_api2_gui                         # debug token
+      - ${DEMOMOTION_DATA}/megapose_cache:/root/arms_ws/src/megapose6d/local_data/joblib_cache
+      - ${DEMOMOTION_DATA}/cache:/root/.cache                                            # torch hub, M3T, ultralytics

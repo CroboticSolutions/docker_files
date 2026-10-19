@@ -200,7 +200,7 @@ FROM build AS demomotion
 # Symlinkovi s putanja koje kod očekuje:
 #   sam/sam2.1_hiera_large.pt            /root/arm_perception/models/sam/
 #   wilor/{wilor_final.ckpt,detector.pt} WiLoR/pretrained_models/ (yaml-ovi u toj mapi su u gitu)
-#   mano/MANO_{RIGHT,LEFT}.pkl           WiLoR/mano_data/mano
+#   (MANO je u gitu, WiLoR/mano_data/mano)
 #   megapose/{coarse-rgb-*,refiner-*}    megapose6d/local_data/megapose-models
 #   foundationpose/{2023-10-28-18-33-37,2024-01-11-20-02-45}   FoundationPose/weights
 RUN W=/root/arms_ws/src/perception/WiLoR && \
@@ -210,8 +210,6 @@ RUN W=/root/arms_ws/src/perception/WiLoR && \
     ln -sfn /models/sam /root/arm_perception/models/sam && \
     ln -sfn /models/wilor/wilor_final.ckpt "$W/pretrained_models/wilor_final.ckpt" && \
     ln -sfn /models/wilor/detector.pt "$W/pretrained_models/detector.pt" && \
-    ln -sfn /models/mano "$W/mano_data/mano" && \
-    ln -sfn mano/MANO_RIGHT.pkl "$W/mano_data/MANO_RIGHT.pkl" && \
     ln -sfn /models/megapose /root/arms_ws/src/megapose6d/local_data/megapose-models
 
 # Mjesta za volumene s podacima (compose), da postoje i bez njih

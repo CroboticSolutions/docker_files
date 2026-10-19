@@ -39,8 +39,11 @@ else
 fi
 
 echo "== CAN (Piper)"
-if lsmod | grep -q '^gs_usb'; then ok "gs_usb modul učitan"; else warn "gs_usb nije učitan (sudo modprobe gs_usb) ili USB-CAN adapter nije spojen"; fi
-if ip link show can0 >/dev/null 2>&1; then ok "can0 postoji (GUI wizard ga sam digne na 1 Mbit/s)"; else warn "nema can0; spoji Piper USB-CAN adapter"; fi
+if ip link show can0 >/dev/null 2>&1; then
+  ok "can0 postoji (GUI wizard ga sam digne na 1 Mbit/s)"
+else
+  warn "nema can0: spoji Piper USB-CAN adapter (ako je spojen: sudo modprobe gs_usb)"
+fi
 
 echo "== .env"
 if [ ! -f .env ]; then
@@ -52,19 +55,17 @@ fi
 set -a; source .env; set +a
 
 echo "== Podaci ($DEMOMOTION_DATA)"
-mkdir -p "$DEMOMOTION_DATA"/{ros_home/calibration,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache} 2>/dev/null ||
-  sudo mkdir -p "$DEMOMOTION_DATA"/{ros_home/calibration,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache}
+mkdir -p "$DEMOMOTION_DATA" 2>/dev/null || { sudo mkdir -p "$DEMOMOTION_DATA" && sudo chown "$USER:" "$DEMOMOTION_DATA"; }
+mkdir -p "$DEMOMOTION_DATA"/{ros_home/calibration,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache}
 ok "mape postoje"
 if [ -z "$(ls -A "$DEMOMOTION_DATA/ros_home/calibration" 2>/dev/null)" ]; then
   warn "nema kalibracije u $DEMOMOTION_DATA/ros_home/calibration (hand-eye, TCP). Vidi README, 'Kalibracija'."
 fi
 
 echo "== Modeli ($DEMOMOTION_MODELS)"
-for f in sam/sam2.1_hiera_large.pt wilor/wilor_final.ckpt wilor/detector.pt mano/MANO_RIGHT.pkl; do
-  if [ -s "$DEMOMOTION_MODELS/$f" ]; then ok "$f"; else fail "nedostaje $f"; fi
-done
-if [ -d "$DEMOMOTION_MODELS/megapose" ]; then ok "megapose/"; else warn "nema megapose/ (registracija modela neće raditi)"; fi
-if [ -d "$DEMOMOTION_MODELS/foundationpose/2024-01-11-20-02-45" ]; then ok "foundationpose/"; else warn "nema foundationpose/ (izbor FoundationPose u GUI-ju neće raditi)"; fi
+mkdir -p "$DEMOMOTION_MODELS" 2>/dev/null || { sudo mkdir -p "$DEMOMOTION_MODELS" && sudo chown "$USER:" "$DEMOMOTION_MODELS"; }
+echo "  skidam što nedostaje (~3.8 GB prvi put), provjera SHA256"
+/usr/bin/python3 -I scripts/download_models.py "$DEMOMOTION_MODELS" || fail "skidanje modela (pokreni ponovno, nastavlja gdje je stalo)"
 
 echo
 if [ "$FAILED" = 0 ]; then

@@ -16,40 +16,30 @@ GUI sam pokreće driver, MoveIt, arm_api2, kameru, SAM2, WiLoR i MegaPose.
 
 - Ubuntu, Docker s compose v2 i buildx, NVIDIA driver i NVIDIA Container Toolkit
 - SSH ključ s pristupom `CroboticSolutions` repoima, učitan u agent (`ssh-add -l`)
-- Modeli (ispod), oko 3.6 GB
+- Internet za prvo skidanje modela (~3.8 GB, ispod)
 - Prvi build traje dugo (torch, pytorch3d za FoundationPose: 20-40 min po arhitekturi, depthai,
   Orbbec) i image je velik (~25 GB). Kasniji buildovi ponovno grade samo kod, i to samo ako se
   neka grana pomakla. pytorch3d i nvdiffrast ostaju u cacheu.
 
 ## Modeli
 
-`DEMOMOTION_MODELS` u `.env`, montira se read-only na `/models`:
+`./setup_host.sh` ih skine sam (`scripts/download_models.py`, samo Python standardna biblioteka)
+u `DEMOMOTION_MODELS` iz `.env` i provjeri SHA256 prema verzijama iz razvojnog kontejnera.
+Ponovno pokretanje preskače ono što već postoji i nastavlja nakon prekida.
+Volume se montira read-only na `/models`:
 
 ```
 models/
-├── sam/sam2.1_hiera_large.pt          857 MB
-├── wilor/wilor_final.ckpt             2.4 GB
-├── wilor/detector.pt                   52 MB
-├── mano/MANO_RIGHT.pkl                  4 MB   MANO licenca: ne dijeliti javno
-├── mano/MANO_LEFT.pkl
-├── megapose/                          248 MB   coarse-rgb-*, refiner-rgb-*, refiner-rgbd-*
-└── foundationpose/                    247 MB   2023-10-28-18-33-37/, 2024-01-11-20-02-45/
+├── sam/sam2.1_hiera_large.pt          857 MB   dl.fbaipublicfiles.com (Meta)
+├── wilor/wilor_final.ckpt             2.4 GB   huggingface.co/spaces/rolpotamias/WiLoR
+├── wilor/detector.pt                   52 MB   isto
+├── megapose/                          248 MB   paris.inria.fr arhiva (MegaPose)
+└── foundationpose/                    247 MB   NVIDIA Google Drive (FoundationPose README)
 ```
 
-Iz postojećeg razvojnog kontejnera, na hostu (`<dev>` je ime tog kontejnera):
-
-```bash
-M=/opt/demomotion/models; mkdir -p $M/{sam,wilor,mano}
-docker cp <dev>:/root/arm_perception/models/sam/sam2.1_hiera_large.pt $M/sam/
-docker cp <dev>:/root/arms_ws/src/perception/WiLoR/pretrained_models/wilor_final.ckpt $M/wilor/
-docker cp <dev>:/root/arms_ws/src/perception/WiLoR/pretrained_models/detector.pt $M/wilor/
-docker cp <dev>:/root/arms_ws/src/perception/WiLoR/mano_data/mano/. $M/mano/
-docker cp <dev>:/root/arms_ws/src/megapose6d/local_data/megapose-models/. $M/megapose/
-docker cp <dev>:/root/foundationpose/FoundationPose/weights/. $M/foundationpose/
-```
-
-FoundationPose težine su iz NVIDIA Google Drive foldera (link u README-u
-[NVlabs/FoundationPose](https://github.com/NVlabs/FoundationPose)).
+**MANO** (`MANO_RIGHT.pkl`, `MANO_LEFT.pkl`) je u našem WiLoR forku (`mano_data/mano/`) i
+dolazi s kodom. MANO licenca zabranjuje redistribuciju, zato **`CroboticSolutions/WiLoR` mora
+ostati privatan**.
 
 ## Kalibracija i podaci
 

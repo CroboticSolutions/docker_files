@@ -1,5 +1,5 @@
 # DemoMotion: cijeli stack u jednom kontejneru. Koristi se kroz ./demomotion.sh.
-# Varijable dolaze iz .env (napravi ga ./setup_host.sh, predložak je .env.example).
+# Pokreće se kroz ./demomotion.sh (provjere, zadane vrijednosti). .env je opcionalan (.env.example).
 
 name: demomotion
 
@@ -47,7 +47,7 @@ services:
       - /dev:/dev
       - /tmp/.X11-unix:/tmp/.X11-unix
       # podaci koji moraju preživjeti novi image
-      - ${DEMOMOTION_DATA:?postavi DEMOMOTION_DATA u .env}/ros_home:/root/.ros            # ROS logovi (+ calibration/ bez postava)
+      - ${DEMOMOTION_DATA:?pokreni kroz ./demomotion.sh}/ros_home:/root/.ros            # ROS logovi (+ calibration/ bez postava)
       - calibration:/root/calibration                                                   # checkout demomotion_calibration (Docker volume)
       - ${HOME}/.ssh/ssh_auth_sock:/ssh-agent
       - ${DEMOMOTION_DATA}/bags:/root/bags

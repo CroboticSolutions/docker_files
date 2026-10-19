@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# DemoMotion wrapper oko docker compose.
+# DemoMotion wrapper oko docker compose. Nema pripreme hosta: sve provjere su ovdje.
 #   ./demomotion.sh build     povuče vrhove grana iz repos.yaml i builda image
-#   ./demomotion.sh up        pokrene stack (GUI :8080, debug konzola :8091)
+#   ./demomotion.sh up        pokrene stack (builda prvo ako imagea nema); GUI :8080, debug :8091
 #   ./demomotion.sh down      ugasi stack (uredno, kroz stop_gui_stack.sh)
 #   ./demomotion.sh attach    tmux sesija gui_stack (izlaz: Ctrl-b d)
 #   ./demomotion.sh shell     bash u kontejneru koji radi
@@ -11,9 +11,23 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+die() { echo "GREŠKA: $*" >&2; exit 1; }
 
-[ -f .env ] || { echo "Nema .env. Prvo pokreni ./setup_host.sh" >&2; exit 1; }
+# .env je opcionalan (predložak .env.example); bez njega vrijede zadane vrijednosti
+if [ -f .env ]; then set -a; source .env; set +a; fi
+export DEMOMOTION_DATA="${DEMOMOTION_DATA:-$HOME/demomotion_data}"
+export DEMOMOTION_IMAGE="${DEMOMOTION_IMAGE:-demomotion:latest}"
+
+check_docker() {
+  docker info >/dev/null 2>&1 || die "Docker ne radi ili korisnik nije u grupi docker (sudo usermod -aG docker \$USER, pa novi login)"
+  docker compose version >/dev/null 2>&1 || die "nema docker compose v2 plugina (paket docker-compose-plugin)"
+  docker buildx version >/dev/null 2>&1 || die "nema docker buildx (paket docker-buildx-plugin)"
+}
+
+check_ssh() {
+  ssh-add -l >/dev/null 2>&1 || die "SSH agent nema ključ s pristupom CroboticSolutions repoima (ssh-add ~/.ssh/id_ed25519)"
+}
 
 # Hash vrhova svih grana iz repos.yaml. Mijenja se samo kad se neka grana pomakne,
 # pa Docker ponovno klonira i builda kod samo tada (apt/pip slojevi ostaju u cacheu).
@@ -29,16 +43,35 @@ src_revisions() {
     done | sha256sum | cut -c1-16
 }
 
+build() {
+  check_docker
+  check_ssh
+  SRC_REVISIONS=$(src_revisions)
+  export SRC_REVISIONS
+  echo "SRC_REVISIONS=${SRC_REVISIONS}"
+  DOCKER_BUILDKIT=1 docker compose build "$@"
+}
+
 case "${1:-}" in
   build)
     shift
-    ssh-add -l >/dev/null 2>&1 || { echo "SSH agent nema ključ (ssh-add -l). Privatni repoi se kloniraju preko SSH-a." >&2; exit 1; }
-    SRC_REVISIONS=$(src_revisions)
-    export SRC_REVISIONS
-    echo "SRC_REVISIONS=${SRC_REVISIONS}"
-    DOCKER_BUILDKIT=1 docker compose build "$@"
+    build "$@"
     ;;
   up)
+    check_docker
+    docker info --format '{{json .Runtimes}}' | grep -q nvidia ||
+      die "Docker ne vidi NVIDIA runtime: instaliraj nvidia-container-toolkit, pa 'sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker'"
+    if command -v ss >/dev/null && ss -ltn | grep -qE ':(8080|8091|9094) '; then
+      [ -n "$(docker compose ps -q demomotion 2>/dev/null)" ] ||
+        die "port 8080/8091/9094 je zauzet. Radi li gui_stack u razvojnom kontejneru? (tmuxinator stop gui_stack)"
+    fi
+    if ! docker image inspect "$DEMOMOTION_IMAGE" >/dev/null 2>&1; then
+      echo "Image $DEMOMOTION_IMAGE ne postoji, prvo build (prvi put 1-2 h)."
+      build
+    fi
+    # mape za podatke kao korisnik (inače ih Docker napravi kao root)
+    mkdir -p "$DEMOMOTION_DATA" 2>/dev/null || { sudo mkdir -p "$DEMOMOTION_DATA" && sudo chown "$USER:" "$DEMOMOTION_DATA"; }
+    mkdir -p "$DEMOMOTION_DATA"/{ros_home,bags,diagnostics,block_groups,logs,gui_config,megapose_cache,cache}
     xhost +local:root >/dev/null 2>&1 || true   # RViz iz kontejnera, ako treba
     # SSH agent za kalibracije (klon/pull/push u kontejneru). Socket se mijenja po loginu,
     # pa stalni link koji compose montira (isti trik kao composers/demomotion).
@@ -51,7 +84,8 @@ case "${1:-}" in
     docker compose up -d
     echo "GUI:           http://localhost:8080"
     echo "Debug konzola: http://localhost:8091"
-    echo "Stanje:        docker compose ps (health), ./demomotion.sh attach"
+    echo "Podaci:        $DEMOMOTION_DATA"
+    echo "Stanje:        docker compose ps (health), ./demomotion.sh logs, ./demomotion.sh attach"
     ;;
   down)     docker compose down ;;
   attach)   docker compose exec demomotion tmux attach -t gui_stack ;;

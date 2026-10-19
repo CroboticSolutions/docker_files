@@ -5,17 +5,20 @@ U kontejneru rade GUI (:8080), debug konzola (:8091), dash bridge (:9094) i WebR
 GUI sam pokreće driver, MoveIt, arm_api2, kameru, SAM2, WiLoR i MegaPose.
 
 ```bash
-./setup_host.sh            # jednom po računalu: provjere, udev, .env, mape za podatke
 ./demomotion.sh build      # povuče vrhove grana iz repos.yaml i builda image
-./demomotion.sh up         # http://localhost:8080
+./demomotion.sh up         # http://localhost:8080 (builda sam ako imagea još nema)
 ./demomotion.sh attach     # tmux s logovima servisa (Ctrl-b d za izlaz)
 ./demomotion.sh down
 ```
+
+Nema pripreme računala: `demomotion.sh` sam provjeri Docker, SSH ključ i NVIDIA runtime, napravi
+mape za podatke (`~/demomotion_data`) i javi što fali. `.env` je opcionalan (`.env.example`).
 
 ## Preduvjeti
 
 - Ubuntu, Docker s compose v2 i buildx, NVIDIA driver i NVIDIA Container Toolkit
 - SSH ključ s pristupom `CroboticSolutions` repoima, učitan u agent (`ssh-add -l`)
+- Piper USB-CAN adapter spojen (`can0`); GUI ga sam digne na 1 Mbit/s
 - Internet: build skida i modele (~3.8 GB, ispod)
 - Prvi build traje dugo (torch, pytorch3d za FoundationPose: 20-40 min po arhitekturi, depthai,
   Orbbec) i image je velik (~29 GB). Kasniji buildovi ponovno grade samo kod, i to samo ako se

@@ -18,6 +18,9 @@ import re
 import sys
 
 SKIP = re.compile(r"^(torch|torchvision|torchaudio|triton|nvidia-.*|pip)$")
+# Ostaci starijih eksperimenata (GraspNet/AnyGrasp, HPE) koje DemoMotion ne importa, a nemaju
+# wheel za cp312: MinkowskiEngine je CUDA build koji ne prolazi s novim torchom, pointnet2 nije na PyPI.
+EXCLUDE = {"minkowskiengine", "pointnet2", "graspnetapi", "grasp-nms", "xtcocotools"}
 only_local = "--local" in sys.argv
 
 seen = {}
@@ -32,7 +35,7 @@ for key, dist in sorted(seen.items()):
     path = str(dist._path)
     if only_local and sys.prefix not in path:
         continue
-    if path.startswith(("/opt/ros", "/usr/lib/python3")) or SKIP.match(key):
+    if path.startswith(("/opt/ros", "/usr/lib/python3")) or SKIP.match(key) or key in EXCLUDE:
         continue
     if "/arms_ws/" in path and sys.prefix not in path:
         continue

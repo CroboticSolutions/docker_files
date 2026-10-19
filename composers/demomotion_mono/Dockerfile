@@ -156,7 +156,8 @@ FROM fpdeps AS pydeps
 COPY requirements/py_global.lock requirements/py_global.git.txt /opt/demomotion/requirements/
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-deps -r /opt/demomotion/requirements/py_global.lock && \
-    pip install --no-deps -r /opt/demomotion/requirements/py_global.git.txt && \
+    # chumpy setup.py importa pip, pa bez izolacije (setuptools 80.9 je iz locka iznad)
+    pip install --no-deps --no-build-isolation -r /opt/demomotion/requirements/py_global.git.txt && \
     # opencv-python, -headless i -contrib dijele isti cv2 folder (OpenCV: samo jedan po okruženju).
     # U razvojnom kontejneru je aktivan contrib 4.13; bez ovoga bi zadnji instaliran bio headless 4.12.
     pip install --no-deps --force-reinstall \
@@ -178,12 +179,16 @@ RUN --mount=type=ssh \
     echo "SRC_REVISIONS=${SRC_REVISIONS}" && \
     mkdir -p -m 0700 /root/.ssh && \
     ssh-keyscan -t ed25519,rsa,ecdsa github.com >> /root/.ssh/known_hosts 2>/dev/null && \
+    mkdir -p src && \
     vcs import --shallow --input repos.yaml src && \
+    # export prije SAM2: vcs export pada (exit 1) na checkoutu commita bez grane
+    vcs export --exact src > /root/arms_ws/VERSIONS.yaml && \
     git init -q src/third_party/sam2 && \
     git -C src/third_party/sam2 remote add origin https://github.com/facebookresearch/sam2.git && \
     git -C src/third_party/sam2 fetch -q --depth 1 origin ${SAM2_COMMIT} && \
     git -C src/third_party/sam2 checkout -q FETCH_HEAD && \
-    vcs export --exact src > /root/arms_ws/VERSIONS.yaml
+    printf '  third_party/sam2:\n    type: git\n    url: https://github.com/facebookresearch/sam2.git\n    version: %s\n' \
+      "${SAM2_COMMIT}" >> /root/arms_ws/VERSIONS.yaml
 # COLCON_IGNORE koji u razvojnom kontejneru postoje samo lokalno (nisu u gitu)
 RUN touch src/third_party/COLCON_IGNORE src/misc/webrtc_video_server/COLCON_IGNORE
 

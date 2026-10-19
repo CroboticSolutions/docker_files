@@ -157,6 +157,11 @@ COPY requirements/py_global.lock requirements/py_global.git.txt /opt/demomotion/
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-deps -r /opt/demomotion/requirements/py_global.lock && \
     pip install --no-deps -r /opt/demomotion/requirements/py_global.git.txt && \
+    # opencv-python, -headless i -contrib dijele isti cv2 folder (OpenCV: samo jedan po okruženju).
+    # U razvojnom kontejneru je aktivan contrib 4.13; bez ovoga bi zadnji instaliran bio headless 4.12.
+    pip install --no-deps --force-reinstall \
+      $(grep -E '^opencv-contrib-python==' /opt/demomotion/requirements/py_global.lock) && \
+    python3 -c "import cv2; assert cv2.__version__.startswith('4.13'), cv2.__version__; print('cv2', cv2.__version__)" && \
     touch /root/py_global/lib/python3.12/site-packages/mpl_toolkits/__init__.py && \
     (pip check || echo "pip check: nepodudarnosti postoje i u razvojnom kontejneru, samo upozorenje")
 

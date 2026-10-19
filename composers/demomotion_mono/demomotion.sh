@@ -45,6 +45,9 @@ case "${1:-}" in
     mkdir -p ~/.ssh
     ssh-add -l >/dev/null 2>&1 || echo "PAZI: SSH agent nema ključ; kontejner neće moći povući/spremiti kalibracije" >&2
     ln -sfn "${SSH_AUTH_SOCK:-/dev/null}" ~/.ssh/ssh_auth_sock
+    # zadani postav kalibracija = ime ovog računala
+    DEMOMOTION_HOSTNAME=$(hostname)
+    export DEMOMOTION_HOSTNAME
     docker compose up -d
     echo "GUI:           http://localhost:8080"
     echo "Debug konzola: http://localhost:8091"

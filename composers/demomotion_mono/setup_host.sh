@@ -60,13 +60,14 @@ mkdir -p "$DEMOMOTION_DATA"/{ros_home,bags,diagnostics,block_groups,logs,gui_con
 ok "mape postoje"
 
 echo "== Kalibracija"
-# Klonira je kontejner pri pokretanju (Docker volume), ovdje samo provjera postavke.
-if [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ]; then
-  ok "postav $DEMOMOTION_CALIBRATION_SET (kontejner ga povuče iz demomotion_calibration pri pokretanju)"
-else
-  warn "DEMOMOTION_CALIBRATION_SET nije postavljen: nominalne (CAD) vrijednosti dok ne kalibriraš u GUI-ju."
-  warn "Postavi su mape u privatnom repou CroboticSolutions/demomotion_calibration. Nikad ne uzimaj tuđi."
-fi
+# Klonira je kontejner pri pokretanju (Docker volume); postav je ime računala osim ako .env kaže drukčije.
+cal_set="${DEMOMOTION_CALIBRATION_SET:-$(hostname)}"
+case "$cal_set" in
+  localhost|ubuntu|debian)
+    warn "generičko ime računala ($cal_set): postavi DEMOMOTION_CALIBRATION_SET u .env (jedinstveno ime postava)" ;;
+  *)
+    ok "postav kalibracija: $cal_set (mapa u demomotion_calibration; ako ne postoji, nominalne vrijednosti do prve kalibracije)" ;;
+esac
 
 echo
 if [ "$FAILED" = 0 ]; then

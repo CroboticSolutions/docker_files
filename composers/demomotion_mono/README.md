@@ -46,11 +46,9 @@ mora ostati privatan, a image se **ne smije pushati u javni registry** (npr. jav
 
 Kalibracije (hand-eye, TCP, dubina) su u privatnom repou
 [`CroboticSolutions/demomotion_calibration`](https://github.com/CroboticSolutions/demomotion_calibration),
-mapa po fizičkom postavu (robot + kamera + alat). U `.env` upiši **svoj** postav:
-
-```bash
-DEMOMOTION_CALIBRATION_SET=toni-legion
-```
+mapa po fizičkom postavu (robot + kamera + alat). **Postav je ime računala** (npr. `toni-legion`),
+pa ne treba ništa podešavati. `DEMOMOTION_CALIBRATION_SET` u `.env` treba samo ako ime računala
+nije jedinstveno (`ubuntu`, `localhost` se ne koriste) ili jedno računalo vozi više postava.
 
 Kontejner pri pokretanju sam klonira repo u Docker volume `calibration` (`/root/calibration`),
 a kasnije napravi `pull` ako nema nespremljenih kalibracija. Za to koristi tvoj SSH agent s hosta
@@ -64,9 +62,9 @@ pa nova kalibracija iz GUI-ja (Apply) završi ravno u checkoutu. U git ide s:
 Volume preživi rebuild i `down`; briše ga samo `docker compose down -v`, zato prije toga spremi.
 
 **Nikad ne uzimaj tuđi postav**: kalibracija vrijedi samo za hardver na kojem je napravljena, a s
-krivom robot ide na krive pozicije bez ikakve greške. Novo računalo/robot: novi naziv postava
-(prazna mapa) ili prazan `DEMOMOTION_CALIBRATION_SET`, pa kalibracija kroz GUI. Bez kalibracije
-xacro koristi nominalne (CAD) vrijednosti.
+krivom robot ide na krive pozicije bez ikakve greške. Novo računalo dobije praznu mapu sa svojim
+imenom: do prve kalibracije kroz GUI xacro koristi nominalne (CAD) vrijednosti, a
+`save-calibration` tu mapu sprema u repo.
 
 ## Podaci
 

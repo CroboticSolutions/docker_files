@@ -10,7 +10,6 @@ source /opt/ros/jazzy/setup.bash
 . /root/arms_ws/setup_ros_domain.sh
 source /root/arms_ws/install/setup.bash
 source /root/py_global/bin/activate
-source /opt/demomotion/calibration_env.sh
 
 check_models() {
   local missing=0 f
@@ -37,7 +36,6 @@ check_models() {
 # pull (samo ako nema nespremljenih kalibracija). Bez mreže/SSH-a radi s onim što ima.
 sync_calibration() {
   local dir=/root/calibration repo=git@github.com:CroboticSolutions/demomotion_calibration.git
-  [ -n "${DEMOMOTION_CALIBRATION_SET:-}" ] || return 0
   if [ ! -d "$dir/.git" ]; then
     if git clone -q "$repo" /tmp/calibration_clone; then
       cp -a /tmp/calibration_clone/. "$dir/" && rm -rf /tmp/calibration_clone
@@ -51,15 +49,17 @@ sync_calibration() {
   else
     echo "[demomotion] nespremljene kalibracije u volumeu: ./demomotion.sh save-calibration" >&2
   fi
-  mkdir -p "$dir/$DEMOMOTION_CALIBRATION_SET"
 }
+
+# Klon prije odabira postava (calibration_env.sh): ime računala se traži u checkoutu
+[ "${1:-stack}" = stack ] && sync_calibration
+source /opt/demomotion/calibration_env.sh
 
 case "${1:-stack}" in
   stack)
-    sync_calibration
     check_models || { echo "[demomotion] Modeli su u imageu (stage models); image je nepotpun, ponovno ./demomotion.sh build." >&2; exit 1; }
     echo "[demomotion] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}, verzije koda: /root/arms_ws/VERSIONS.yaml"
-    echo "[demomotion] kalibracije: ${ARMS_CALIBRATION_DIR:-/root/.ros/calibration} ($(find "${ARMS_CALIBRATION_DIR:-/root/.ros/calibration}" -name current.yaml 2>/dev/null | wc -l) aktivnih; bez njih nominalne CAD vrijednosti)"
+    echo "[demomotion] kalibracije: postav ${DEMOMOTION_CALIBRATION_SET:-nema}, ${ARMS_CALIBRATION_DIR:-/root/.ros/calibration} ($(find "${ARMS_CALIBRATION_DIR:-/root/.ros/calibration}" -name current.yaml 2>/dev/null | wc -l) aktivnih; bez njih nominalne CAD vrijednosti)"
 
     stop_stack() {
       echo "[demomotion] gasim stack"

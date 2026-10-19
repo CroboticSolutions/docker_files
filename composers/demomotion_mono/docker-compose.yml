@@ -38,8 +38,9 @@ services:
       DISPLAY: ${DISPLAY:-}
       NVIDIA_DRIVER_CAPABILITIES: all
       GUI_USE_CONTAINERS: "0"
-      # postav iz demomotion_calibration; entrypoint postavi ARMS_CALIBRATION_DIR
+      # postav iz demomotion_calibration: .env, inače ime računala (demomotion.sh up)
       DEMOMOTION_CALIBRATION_SET: ${DEMOMOTION_CALIBRATION_SET:-}
+      DEMOMOTION_HOSTNAME: ${DEMOMOTION_HOSTNAME:-}
       # SSH agent hosta (demomotion.sh up ga linka): klon/pull/push demomotion_calibration
       SSH_AUTH_SOCK: /ssh-agent
     volumes:

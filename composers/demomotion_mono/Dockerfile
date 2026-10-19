@@ -25,6 +25,7 @@
 #   fpdeps   + FoundationPose venv, nvdiffrast, pytorch3d (spori CUDA build; treba samo torch)
 #   pydeps   + py_global.lock (mijenja se kad se doda pip paket)
 #   sources  (od base) vcs import grana            -- paralelno s python/fpdeps/pydeps
+#   eipscanner  (od base) EtherNet/IP biblioteka za FANUC
 #   pkgxml   samo package.xml iz sources
 #   deps     pydeps + rosdep iz package.xml          -- cache dok se ovisnosti ne promijene
 #   build    deps + kod: colcon (ccache), venvovi, mycpp, frontend
@@ -192,6 +193,19 @@ RUN --mount=type=ssh \
 # COLCON_IGNORE koji u razvojnom kontejneru postoje samo lokalno (nisu u gitu)
 RUN touch src/third_party/COLCON_IGNORE src/misc/webrtc_video_server/COLCON_IGNORE
 
+# ---------------------------------------------------------------- eipscanner
+# EtherNet/IP biblioteka za fanuc_eth_ip/fanuc_control (traže je u /usr/local): nije u aptu,
+# FANUC README kaže build iz izvornog koda. Ista verzija kao u razvojnom kontejneru.
+# Zaseban stage, kopira se u deps: dodavanje u base bi ponovno kompajliralo pytorch3d.
+FROM base AS eipscanner
+ARG EIPSCANNER_VERSION=1.1.0
+RUN git -c advice.detachedHead=false clone -q --depth 1 -b ${EIPSCANNER_VERSION} \
+      https://github.com/nimbuscontrols/EIPScanner.git /tmp/eipscanner && \
+    cmake -S /tmp/eipscanner -B /tmp/eipscanner/build -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/opt/eipscanner && \
+    cmake --build /tmp/eipscanner/build -j"$(nproc)" && \
+    cmake --install /tmp/eipscanner/build
+
 # ---------------------------------------------------------------- pkgxml
 # Samo package.xml i *_IGNORE markeri. COPY u deps ide po sadržaju, pa rosdep
 # ostaje u cacheu dok god se ovisnosti paketa ne promijene.
@@ -204,6 +218,8 @@ RUN mkdir /pkgxml && \
 FROM pydeps AS deps
 ARG ROS_DISTRO
 ARG ROSDEP_SKIP_KEYS=""
+COPY --from=eipscanner /opt/eipscanner/ /usr/local/
+RUN ldconfig
 COPY --from=pkgxml /pkgxml/src /tmp/pkgxml/src
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \

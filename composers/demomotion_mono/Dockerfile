@@ -86,7 +86,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       ros-${ROS_DISTRO}-tf-transformations ros-${ROS_DISTRO}-pcl-conversions \
       ros-${ROS_DISTRO}-librealsense2 ros-${ROS_DISTRO}-depthai-v3 \
       ros-${ROS_DISTRO}-robot-calibration ros-${ROS_DISTRO}-warehouse-ros-sqlite \
-      ros-${ROS_DISTRO}-generate-parameter-library ros-${ROS_DISTRO}-backward-ros
+      ros-${ROS_DISTRO}-generate-parameter-library ros-${ROS_DISTRO}-backward-ros \
+      ros-${ROS_DISTRO}-ur-robot-driver ros-${ROS_DISTRO}-ur-description \
+      ros-${ROS_DISTRO}-ur-moveit-config ros-${ROS_DISTRO}-ur-simulation-gz
 
 # CUDA 12.8 toolkit (/usr/local/cuda-12.8, CUDA_HOME koji kod očekuje): FoundationPose
 # ekstenzije. Torch nosi vlastiti CUDA runtime; ovo treba za nvcc.

@@ -205,6 +205,7 @@ six==1.17.0
 smmap==5.0.2
 smplx==0.1.28
 sounddevice==0.5.5
+ssik==8.2.0
 stack-data==0.6.3
 starlette==1.0.0
 submitit==1.5.4
